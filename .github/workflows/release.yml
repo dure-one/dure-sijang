@@ -23,7 +23,7 @@ on:
 
 env:
   RUST_VERSION: stable
-  BIN_NAME: "uad-shizuku"
+  BIN_NAME: "dure-sijang"
 
 jobs:
   build:
@@ -60,12 +60,12 @@ jobs:
             build-args: "--release"
             platform_type: linux
 
-          # FreeBSD - Temporarily disabled
-          # - name: FreeBSD x86_64
-          #   target: x86_64-unknown-freebsd
-          #   build-args: "--release"
-          #   freebsd_version: "14.2"
-          #   platform_type: freebsd
+          # FreeBSD
+          - name: FreeBSD x86_64
+            target: x86_64-unknown-freebsd
+            build-args: "--release"
+            freebsd_version: "14.2"
+            platform_type: freebsd
 
           - name: Android aarch64
             target: aarch64-linux-android
@@ -197,9 +197,9 @@ jobs:
           ls -alh ./app/build/outputs/bundle/release/ || echo "AAB directory not found"
 
           # Copy APK for artifact upload
-          cp ./app/build/outputs/apk/release/app-release.apk ./app/build/outputs/apk/release/uad-shizuku-all-signed.apk
+          cp ./app/build/outputs/apk/release/app-release.apk ./app/build/outputs/apk/release/dure-sijang-all-signed.apk
           # Copy AAB for artifact upload
-          cp ./app/build/outputs/bundle/release/app-release.aab ./app/build/outputs/apk/release/uad-shizuku-all.aab
+          cp ./app/build/outputs/bundle/release/app-release.aab ./app/build/outputs/apk/release/dure-sijang-all.aab
           popd
 
       - name: Build Binary for ${{ matrix.platform.name }}
@@ -210,7 +210,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: ${{ matrix.platform.build-args }} --package uad-shizuku
+          args: ${{ matrix.platform.build-args }} --package dure-sijang
 
       - name: Build FreeBSD Binary in VM
         if: |
@@ -223,14 +223,36 @@ jobs:
           prepare: |
             pkg install -y curl pkgconf gtk3 cairo pango gdk-pixbuf2 at-spi2-core pixman wayland bzip2
             ln -sf /usr/local/bin/pkgconf /usr/local/bin/pkg-config || true
+            export PKG_CONFIG_PATH=/usr/local/libdata/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig
+            mkdir -p /usr/local/libdata/pkgconfig
+            # FreeBSD base ships bzip2 and zlib without pkgconfig metadata, which
+            # breaks pango/cairo's transitive freetype2 -> bzip2/zlib pkg-config lookup.
+            # Synthesize minimal .pc files pointing at the real headers/libs.
+            for lib in bzip2:bz2:bzlib.h zlib:z:zlib.h; do
+              pcname=${lib%%:*}
+              rest=${lib#*:}
+              libname=${rest%%:*}
+              header=${rest#*:}
+              if pkg-config --exists "$pcname" 2>/dev/null; then
+                continue
+              fi
+              incdir=$(dirname "$(find /usr/include /usr/local/include -name "$header" 2>/dev/null | head -1)")
+              libdir=$(dirname "$(find /usr/lib /usr/local/lib -name "lib${libname}.so*" 2>/dev/null | head -1)")
+              if [ -n "$incdir" ] && [ -n "$libdir" ]; then
+                printf 'Name: %s\nDescription: %s compression library (FreeBSD base, synthesized .pc)\nVersion: 1.0.0\nLibs: -L%s -l%s\nCflags: -I%s\n' \
+                  "$pcname" "$pcname" "$libdir" "$libname" "$incdir" > "/usr/local/libdata/pkgconfig/${pcname}.pc"
+                echo "Synthesized ${pcname}.pc (include=${incdir}, lib=${libdir})"
+              else
+                echo "::warning::Could not locate headers/libs for ${pcname} (header=${header}, lib=lib${libname}.so)"
+              fi
+            done
             curl https://sh.rustup.rs -sSf | sh -s -- -y --profile=minimal --default-toolchain ${{ env.RUST_VERSION }}
           run: |
             . $HOME/.cargo/env
             export PKG_CONFIG_PATH=/usr/local/libdata/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig
-            cargo build --release --package uad-shizuku --target ${{ matrix.platform.target }}
+            cargo build --release --package dure-sijang --target ${{ matrix.platform.target }}
 
       - name: Windows - Code Signing
-        continue-on-error: true
         if: |
           (contains(matrix.platform.target, 'windows') && env.WINDOWS_CERT_P12_BASE64 != '' && env.WINDOWS_CERT_PASSWORD != '') &&
           (github.event.inputs.platforms == 'all' || github.event.inputs.platforms == 'windows' || github.event.inputs.platforms == '')
@@ -248,7 +270,7 @@ jobs:
           echo "Checking for build output..."
           Get-ChildItem -Path target -Recurse -Filter "*.exe" | Format-Table FullName
 
-          $EXE_PATH = "target/release-with-symbols/uad-shizuku.exe"
+          $EXE_PATH = "target/release-with-symbols/dure-sijang.exe"
           if (-Not (Test-Path $EXE_PATH)) {
             echo "::error:: Executable not found at $EXE_PATH"
             echo "Listing target directory contents:"
@@ -256,6 +278,33 @@ jobs:
             exit 1
           }
           echo "Signing $EXE_PATH..."
+
+          # Validate the certificate before signing so a bad pfx fails with a clear reason
+          # instead of the opaque "No certificates were found that met all the given criteria."
+          try {
+            $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(
+              "windows.pfx", $env:WINDOWS_CERT_PASSWORD,
+              [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::EphemeralKeySet)
+          } catch {
+            echo "::error:: Failed to load windows.pfx - likely wrong WINDOWS_CERT_PASSWORD or a corrupted/invalid certificate file: $_"
+            exit 1
+          }
+          echo "Certificate Subject: $($cert.Subject)"
+          echo "Certificate Thumbprint: $($cert.Thumbprint)"
+          echo "Certificate NotAfter: $($cert.NotAfter)"
+          echo "Certificate HasPrivateKey: $($cert.HasPrivateKey)"
+          $eku = $cert.Extensions | Where-Object { $_.Oid.FriendlyName -eq 'Enhanced Key Usage' }
+          if ($eku) {
+            echo "Certificate EKU: $($eku.Format($false))"
+          }
+          if (-Not $cert.HasPrivateKey) {
+            echo "::error:: windows.pfx has no private key - re-export the certificate with 'Include all certificates in the certification path if possible' and the private key included"
+            exit 1
+          }
+          if ($cert.NotAfter -lt (Get-Date)) {
+            echo "::error:: Certificate expired on $($cert.NotAfter)"
+            exit 1
+          }
 
           # Find signtool.exe (it's part of the Windows SDK)
           $SIGNTOOL_PATH = (Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Filter "signtool.exe" -Recurse | Sort-Object VersionInfo -Descending | Select-Object -First 1).FullName
@@ -271,29 +320,53 @@ jobs:
           # Clean up
           Remove-Item windows.pfx
 
+      - name: Windows - Rename Binary by Architecture
+        if: |
+          contains(matrix.platform.target, 'windows') &&
+          (github.event.inputs.platforms == 'all' || github.event.inputs.platforms == 'windows' || github.event.inputs.platforms == '')
+        shell: pwsh
+        run: |
+          $arch = switch -Wildcard ("${{ matrix.platform.target }}") {
+            "x86_64-*"  { "x86_64" }
+            "i686-*"    { "i686" }
+            "aarch64-*" { "aarch64" }
+            default     { "${{ matrix.platform.target }}" }
+          }
+          $src = "target/release-with-symbols/dure-sijang.exe"
+          $dst = "target/release-with-symbols/dure-sijang-$arch.exe"
+          if (Test-Path $src) {
+            Move-Item -Force $src $dst
+            echo "Renamed $src -> $dst"
+          } elseif (Test-Path $dst) {
+            echo "$dst already exists, skipping rename"
+          } else {
+            echo "::error:: Neither $src nor $dst found"
+            exit 1
+          }
+
       - name: Upload Binary Artifact
         if: (!contains(matrix.platform.name, 'Android APK arm64'))
         uses: actions/upload-artifact@v4
         with:
           # Finally, we store the binary as GitHub artifact for later usage
-          name: uad-shizuku-${{ matrix.platform.target }}
-          path: ${{ contains(matrix.platform.target, 'freebsd') && format('target/{0}/release/uad-shizuku*', matrix.platform.target) || format('target/release{0}/uad-shizuku*', contains(matrix.platform.target, 'windows') && '-with-symbols' || '') }}
+          name: dure-sijang-${{ matrix.platform.target }}
+          path: ${{ contains(matrix.platform.target, 'freebsd') && format('target/{0}/release/dure-sijang*', matrix.platform.target) || format('target/release{0}/dure-sijang*', contains(matrix.platform.target, 'windows') && '-with-symbols' || '') }}
           retention-days: 1
 
       - name: Android - Upload APK Artifact
         if: (contains(matrix.platform.name, 'Android APK arm64'))
         uses: actions/upload-artifact@v4
         with:
-          name: uad-shizuku-all-signed.apk
-          path: ./mobile/app/build/outputs/apk/release/uad-shizuku-all-signed.apk
+          name: dure-sijang-all-signed.apk
+          path: ./mobile/app/build/outputs/apk/release/dure-sijang-all-signed.apk
           retention-days: 1
 
       - name: Android - Upload AAB Artifact
         if: (contains(matrix.platform.name, 'Android APK arm64'))
         uses: actions/upload-artifact@v4
         with:
-          name: uad-shizuku-all.aab
-          path: ./mobile/app/build/outputs/apk/release/uad-shizuku-all.aab
+          name: dure-sijang-all.aab
+          path: ./mobile/app/build/outputs/apk/release/dure-sijang-all.aab
           retention-days: 1
 
   release:
@@ -302,6 +375,8 @@ jobs:
     # We run the release job only if a tag starts with 'v' letter
     if: startsWith( github.ref, 'refs/tags/v' )
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -313,53 +388,84 @@ jobs:
         with:
           path: artifacts
 
+      - name: Setup Python for VirusTotal Scan
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python Dependencies
+        run: |
+          pip install requests
+
       - name: VirusTotal Scan
         id: vt_scan
         continue-on-error: true
-        uses: crazy-max/ghaction-virustotal@v4
-        with:
-          vt_api_key: ${{ secrets.VT_API_KEY }}
-          update_release_body: false
-          request_rate: 4
-          files: |
-            ./artifacts/uad-shizuku-aarch64-apple-darwin/uad-shizuku
-            ./artifacts/uad-shizuku-aarch64-linux-android/uad-shizuku
-            ./artifacts/uad-shizuku-aarch64-unknown-linux-musl/uad-shizuku
-            ./artifacts/uad-shizuku-all-signed.apk/uad-shizuku-all-signed.apk
-            ./artifacts/uad-shizuku-armv7-linux-androideabi/uad-shizuku
-            ./artifacts/uad-shizuku-armv7-unknown-linux-musleabihf/uad-shizuku
-            ./artifacts/uad-shizuku-x86_64-apple-darwin/uad-shizuku
-            ./artifacts/uad-shizuku-x86_64-unknown-linux-musl/uad-shizuku
-            ./artifacts/uad-shizuku-x86_64-pc-windows-msvc/uad-shizuku.exe
-            ./artifacts/uad-shizuku-i686-pc-windows-msvc/uad-shizuku.exe
-            ./artifacts/uad-shizuku-aarch64-pc-windows-msvc/uad-shizuku.exe
+        env:
+          VT_REQUEST_RATE: 4
+        run: |
+          python .github/scripts/virustotal_scan.py \
+            "${{ secrets.VT_API_KEY }}" \
+            ./artifacts/dure-sijang-aarch64-apple-darwin/dure-sijang \
+            ./artifacts/dure-sijang-aarch64-linux-android/dure-sijang \
+            ./artifacts/dure-sijang-aarch64-unknown-linux-musl/dure-sijang \
+            ./artifacts/dure-sijang-all-signed.apk/dure-sijang-all-signed.apk \
+            ./artifacts/dure-sijang-armv7-linux-androideabi/dure-sijang \
+            ./artifacts/dure-sijang-armv7-unknown-linux-musleabihf/dure-sijang \
+            ./artifacts/dure-sijang-x86_64-apple-darwin/dure-sijang \
+            ./artifacts/dure-sijang-x86_64-unknown-linux-musl/dure-sijang \
+            ./artifacts/dure-sijang-x86_64-unknown-freebsd/dure-sijang \
+            ./artifacts/dure-sijang-x86_64-pc-windows-msvc/dure-sijang-x86_64.exe \
+            ./artifacts/dure-sijang-i686-pc-windows-msvc/dure-sijang-i686.exe \
+            ./artifacts/dure-sijang-aarch64-pc-windows-msvc/dure-sijang-aarch64.exe
 
       - name: Parse Analysis Results
         id: parse_results
         run: |
-          # Extract changelog from CHANGELOG.md (first "What's Changed" section only)
+          # Auto-generate changelog from git commits between tags
           CHANGELOG_CONTENT=""
-          if [ -f "CHANGELOG.md" ]; then
-            echo "Extracting changelog from CHANGELOG.md..."
 
-            # Read the first "What's Changed" section
-            # Stop at the next "##" heading or end of file
-            CHANGELOG_RAW=$(awk '
-              /^## What'\''s Changed$/ { in_section=1; next }
-              in_section && /^##/ { exit }
-              in_section && NF { print }
-            ' CHANGELOG.md)
+          echo "Generating changelog from git history..."
 
-            # Process changelog: remove "by @username" and deduplicate
-            if [ -n "$CHANGELOG_RAW" ]; then
-              # Remove "by @username" pattern and deduplicate lines
-              CHANGELOG_CONTENT=$(echo "$CHANGELOG_RAW" | \
-                sed -E 's/ by @[a-zA-Z0-9_-]+//g' | \
-                awk '!seen[$0]++')
+          # Get previous tag (fallback to first commit if no previous tag)
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          CURRENT_TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "HEAD")
 
-              echo "Processed changelog:"
-              echo "$CHANGELOG_CONTENT"
+          echo "Commits between $PREVIOUS_TAG and $CURRENT_TAG:"
+
+          # Get all commits between tags, excluding merges
+          ALL_COMMITS=$(git log $PREVIOUS_TAG..HEAD --pretty=format:"- %s" --no-merges | \
+            sed -E 's/ \(#[0-9]+\)$//g' | \
+            awk '!seen[$0]++')
+
+          if [ -n "$ALL_COMMITS" ]; then
+            # Group commits by type
+            FEATURES=$(echo "$ALL_COMMITS" | grep -E "^- (feat|feature)" || echo "")
+            FIXES=$(echo "$ALL_COMMITS" | grep -E "^- fix" || echo "")
+            CHORES=$(echo "$ALL_COMMITS" | grep -E "^- (chore|ci|docs|refactor|perf|test|style)" || echo "")
+            OTHER=$(echo "$ALL_COMMITS" | grep -vE "^- (feat|feature|fix|chore|ci|docs|refactor|perf|test|style)" || echo "")
+
+            # Build formatted changelog
+            if [ -n "$FEATURES" ]; then
+              CHANGELOG_CONTENT="${CHANGELOG_CONTENT}### ✨ Features\n${FEATURES}\n\n"
             fi
+
+            if [ -n "$FIXES" ]; then
+              CHANGELOG_CONTENT="${CHANGELOG_CONTENT}### 🐛 Bug Fixes\n${FIXES}\n\n"
+            fi
+
+            if [ -n "$CHORES" ]; then
+              CHANGELOG_CONTENT="${CHANGELOG_CONTENT}### 🔧 Maintenance\n${CHORES}\n\n"
+            fi
+
+            if [ -n "$OTHER" ]; then
+              CHANGELOG_CONTENT="${CHANGELOG_CONTENT}### 📦 Other Changes\n${OTHER}\n\n"
+            fi
+
+            echo "Generated changelog:"
+            echo -e "$CHANGELOG_CONTENT"
+          else
+            echo "No commits found between tags"
+            CHANGELOG_CONTENT="No changes recorded."
           fi
 
           # Get the analysis output from previous step
@@ -441,25 +547,25 @@ jobs:
               if [ -d "$i" ]
               then
                   # Handle APK separately
-                  [[ "$i" == *"uad-shizuku-all-signed.apk"* ]] && cp artifacts/uad-shizuku-all-signed.apk/uad-shizuku-all-signed.apk distbin/uad-shizuku-all-signed.apk && continue
+                  [[ "$i" == *"dure-sijang-all-signed.apk"* ]] && cp artifacts/dure-sijang-all-signed.apk/dure-sijang-all-signed.apk distbin/dure-sijang-all-signed.apk && continue
 
-                  # Handle Windows executables - rename by architecture
+                  # Handle Windows executables - already named by architecture from the build job
                   if [[ "$i" == *"x86_64-pc-windows-msvc"* ]]; then
-                      cp "$i"/uad-shizuku.exe distbin/uad-shizuku-x86_64.exe 2>/dev/null || true
+                      cp "$i"/dure-sijang-x86_64.exe distbin/dure-sijang-x86_64.exe 2>/dev/null || true
                       continue
                   elif [[ "$i" == *"i686-pc-windows-msvc"* ]]; then
-                      cp "$i"/uad-shizuku.exe distbin/uad-shizuku-i686.exe 2>/dev/null || true
+                      cp "$i"/dure-sijang-i686.exe distbin/dure-sijang-i686.exe 2>/dev/null || true
                       continue
                   elif [[ "$i" == *"aarch64-pc-windows-msvc"* ]]; then
-                      cp "$i"/uad-shizuku.exe distbin/uad-shizuku-aarch64.exe 2>/dev/null || true
+                      cp "$i"/dure-sijang-aarch64.exe distbin/dure-sijang-aarch64.exe 2>/dev/null || true
                       continue
                   fi
 
                   # Handle other platforms - tar compress
                   cp LICENSE* "$i"
                   cp README.md "$i"
-                  rm "$i/uad-shizuku.d" 1>/dev/null 2>&1 || true
-                  chmod +x "$i/uad-shizuku" 1>/dev/null 2>&1 || true
+                  rm "$i/dure-sijang.d" 1>/dev/null 2>&1 || true
+                  chmod +x "$i/dure-sijang" 1>/dev/null 2>&1 || true
                   tar -cvpzf "${i}.tar.gz" --directory=${i} .
               fi
           done
@@ -475,4 +581,4 @@ jobs:
           make_latest: true
           files: distbin/*
           body: ${{ steps.parse_results.outputs.formatted_results }}
-          token: ${{ secrets.RELEASE_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
