@@ -29,7 +29,7 @@ if [[ "$1" == "help" ]] || [[ -z "${1:-}" ]]; then
 fi
 
 # variables
-PROJECT_NAME="uad-shizuku"
+PROJECT_NAME="dure-sijang"
 PROJECT_ROOT=$(realpath ..)
 RELATIVE_DIR="mobile"
 CONTAINER_DIR="/opt"
@@ -363,7 +363,7 @@ INSTALL_EOF
 fi
 
 # make project dir
-# mkdir -p /var/run/sshd /opt/project/uad-shizuku
+# mkdir -p /var/run/sshd /opt/project/dure-sijang
 
 # running qemu with SSH port forwarding (host:2222 -> guest:22)
 if [[ "$1" == "rundebug" ]]; then

@@ -1,4 +1,4 @@
-app-title = UAD-Shizuku
+app-title = Dure-Sijang
 app-description = Universal Android Debloater using Shizuku.
 settings = Settings
 exit = Exit
@@ -239,7 +239,7 @@ install-dlg-step3 = 3. Pairing with Wireless Debugging in Shizuku:
 install-dlg-separator = -------------- (First time only) --------------
 install-dlg-step4 = 4. Start Shizuku Service():
 install-dlg-open-shizuku = Open Shizuku
-install-dlg-step5 = 5. Return to UAD-Shizuku and tap Retry Detection
+install-dlg-step5 = 5. Return to Dure-Sijang and tap Retry Detection
 install-dlg-detailed-instructions = For detailed instructions:
 install-dlg-guide = Installation Guide
 install-dlg-guide-url = https://uad-shizuku.pages.dev/docs/installation
@@ -250,6 +250,6 @@ close = Close
 
 # About Dialog
 about = About
-about-description = Remove bloat apps selectively, scan installed apps with VirusTotal/HybridAnalysis, and install FOSS apps through Obtainium.
+about-description = Browse multiple mycart stores seamlessly. Dual-mode browsing: WebView for full website rendering or API mode for optimized native UI. Synchronize store directory from dure.one, manage shopping carts, and track browsing history.
 about-website = Website
 about-credits = Credits

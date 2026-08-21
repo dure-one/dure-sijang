@@ -1,6 +1,6 @@
 # Usage
 
-This guide explains how to use Dure-Sijang to manage Android applications on your device.
+This guide explains how to use Dure-Sijang to browse multiple mycart stores with dual-mode browsing (WebView and API modes).
 
 ## Getting Started
 

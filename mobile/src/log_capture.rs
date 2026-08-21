@@ -115,7 +115,7 @@ pub fn init_combined_logger(level_filter: log::LevelFilter) {
         let _ = android_logger::init_once(
             android_logger::Config::default()
                 .with_max_level(level_filter)
-                .with_tag("UAD-Shizuku"),
+                .with_tag("Dure-Sijang"),
         );
     }
 }

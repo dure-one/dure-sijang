@@ -1,4 +1,4 @@
-app-title = UAD-Shizuku
+app-title = Dure-Sijang
 app-description = Shizuku를 사용하는 유니버설 안드로이드 디블로터.
 settings = 설정
 exit = 종료
@@ -239,7 +239,7 @@ install-dlg-step3 = 3. Shizuku에서 무선 디버깅과 페어링:
 install-dlg-separator = -------------- (처음만) --------------
 install-dlg-step4 = 4. Shizuku 서비스 시작():
 install-dlg-open-shizuku = Shizuku 열기
-install-dlg-step5 = 5. UAD-Shizuku로 돌아가서 재감지 탭
+install-dlg-step5 = 5. Dure-Sijang로 돌아가서 재감지 탭
 install-dlg-detailed-instructions = 자세한 설명:
 install-dlg-guide = 설치 가이드
 install-dlg-guide-url = https://uad-shizuku.pages.dev/docs/kr/docs/installation
@@ -250,6 +250,6 @@ close = 닫기
 
 # About Dialog
 about = 정보
-about-description = 블로트웨어를 선택적으로 제거하고, 설치된 앱을 VirusTotal/HybridAnalysis로 검사하며, Obtainium을 통해 FOSS 앱을 설치합니다.
+about-description = 여러 mycart 스토어를 원활하게 탐색합니다. 듀얼 모드 브라우징: 전체 웹사이트 렌더링을 위한 웹뷰 또는 최적화된 네이티브 UI를 위한 API 모드. dure.one에서 스토어 디렉토리를 동기화하고, 장바구니를 관리하며, 탐색 기록을 추적합니다.
 about-website = 웹사이트
 about-credits = 크레딧

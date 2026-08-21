@@ -1,4 +1,4 @@
-Initial release of UAD-Shizuku for Android
+Initial release of Dure-Sijang for Android
 • Selective bloatware removal using UAD list
 • SHA256 checksum scanning for installed apps
 • VirusTotal API integration for app scanning

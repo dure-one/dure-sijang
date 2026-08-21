@@ -52,7 +52,7 @@ impl DlgAbout {
                     .max_size([ctx.content_rect().width() - 40.0, ctx.content_rect().height() - 40.0])
             })
             .show(ctx, |ui| {
-                ui.heading("UAD-Shizuku");
+                ui.heading("Dure-Sijang");
                 ui.add_space(8.0);
 
                 let max_height = ui.available_height() - 50.0;
@@ -106,9 +106,9 @@ impl DlgAbout {
 
                         ui.heading("Reference Projects");
                         ui.add_space(4.0);
-                        ui.add(egui::Label::new("• Universal Android Debloater Next Generation").wrap());
-                        ui.add(egui::Label::new("  Cross-platform GUI written in Rust using ADB to debloat non-rooted Android devices.").wrap());
-                        ui.label("  License: GPL-3.0");
+                        ui.add(egui::Label::new("• mycart").wrap());
+                        ui.add(egui::Label::new("  Go-fiber backed webstore platform - individual stores connected through dure.one directory.").wrap());
+                        ui.label("  License: MIT");
                         ui.add_space(2.0);
                         ui.label("• bevy_game_template");
                         ui.label("  Template for Bevy game projects");

@@ -586,7 +586,7 @@ fn install_linux(paths: &InstallPaths, current_exe: &PathBuf) -> Result<String, 
     log::info!("Creating .desktop files...");
     let desktop_content = format!(
         r#"[Desktop Entry]
-Name=UAD-Shizuku {}
+Name=Dure-Sijang {}
 Comment=Universal Android Debloater with Shizuku support
 Exec={}
 Icon={}
@@ -751,7 +751,7 @@ fn install_windows(paths: &InstallPaths, current_exe: &PathBuf) -> Result<String
 
         // Define registry entries to add (name, type, value)
         let reg_entries: Vec<(&str, &str, String)> = vec![
-            ("DisplayName", "REG_SZ", "UAD-Shizuku".to_string()),
+            ("DisplayName", "REG_SZ", "Dure-Sijang".to_string()),
             ("DisplayVersion", "REG_SZ", CURRENT_VERSION.to_string()),
             ("Publisher", "REG_SZ", "nikescar".to_string()),
             (
@@ -890,7 +890,7 @@ fn create_windows_shortcut(target: &PathBuf, shortcut_path: &PathBuf) -> Result<
         .chain(Some(0))
         .collect();
     let args_wide: Vec<u16> = "".encode_utf16().chain(Some(0)).collect();
-    let desc_wide: Vec<u16> = "UAD-Shizuku - Universal Android Debloater"
+    let desc_wide: Vec<u16> = "Dure-Sijang - Universal Android Debloater"
         .encode_utf16()
         .chain(Some(0))
         .collect();
@@ -1013,7 +1013,7 @@ fn uninstall_linux(paths: &InstallPaths) -> Result<String, String> {
         let _ = fs::remove_file(desktop);
     }
 
-    Ok("Successfully uninstalled UAD-Shizuku".to_string())
+    Ok("Successfully uninstalled Dure-Sijang".to_string())
 }
 
 #[cfg(target_os = "macos")]
@@ -1027,7 +1027,7 @@ fn uninstall_macos(paths: &InstallPaths) -> Result<String, String> {
             .map_err(|e| format!("Failed to remove app bundle: {}", e))?;
     }
 
-    Ok("Successfully uninstalled UAD-Shizuku".to_string())
+    Ok("Successfully uninstalled Dure-Sijang".to_string())
 }
 
 #[cfg(target_os = "windows")]
@@ -1597,7 +1597,7 @@ fn replace_binary(
             log::info!("Updating Linux .desktop files...");
             let desktop_content = format!(
                 r#"[Desktop Entry]
-Name=UAD-Shizuku {}
+Name=Dure-Sijang {}
 Comment=Universal Android Debloater with Shizuku support
 Exec={}
 Icon={}
