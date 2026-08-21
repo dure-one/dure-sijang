@@ -150,4 +150,4 @@ gradle assembleRelease
 # logcat commands
 # adb logcat -c
 # adb logcat -v time -s *:V > fullcat.log
-# adb logcat -s UAD-Shizuku > uadcat.log
+# adb logcat -s Dure-Sijang > uadcat.log

@@ -787,7 +787,7 @@ impl DureSijangApp {
     }
 
     fn render_desktop_tabs(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
-        // Browser UI replaces legacy UAD-Shizuku tabs
+        // Browser UI replaces legacy Dure-Sijang tabs
         self.render_browser_ui(ui, frame);
     }
 

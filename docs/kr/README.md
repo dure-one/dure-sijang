@@ -1,16 +1,17 @@
 # Dure-Sijang
 
-안드로이드에서 블로트웨어 제거, 바이러스 검사, FOSS 앱 설치를 지원합니다.
+여러 mycart 스토어를 탐색할 수 있는 Mycart 전용 브라우저입니다.
 
-Dure-Sijang는 [UAD-NG](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation)의 블로트웨어 앱 정보를 사용합니다. <br/>
-[UAD-NG](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation)는 제조사별 블로트웨어 제거에 더 나은 구현을 제공합니다.
-* Dure-Sijang는 VirusTotal, Hybrid-Analysis, APKMirror와 제휴 관계가 없습니다. 이 프로그램을 통한 해당 서비스는 예고 없이 종료될 수 있습니다.
+Dure-Sijang는 go-fiber 기반 웹스토어 플랫폼인 mycart를 위한 크로스 플랫폼 브라우저입니다. <br/>
+각 mycart 스토어는 독립적인 웹스토어로 효율적으로 탐색할 수 있습니다.
 
 ## 기능
 
-* 블로트웨어 제거 : UAD-NG와 Shizuku(ADB 무선)를 사용한 앱 목록 및 블로트웨어 제거 기능
-* 검사 : VirusTotal과 Hybrid-Analysis를 통한 앱 검사
-* 설치 : [offa 목록](https://github.com/offa/android-foss?tab=readme-ov-file#-dialer), [fmhy 목록](https://fmhy.net/mobile#modded-apks)을 사용한 오픈소스 앱 목록
+* 듀얼 모드 브라우징 : 전체 웹사이트 렌더링을 위한 WebView 또는 네이티브 UI를 위한 API 모드
+* 스토어 디렉토리 : dure.one에서 여러 mycart 스토어 동기화
+* 장바구니 : 제품 탐색 및 인앱 장바구니 관리
+* 탭 관리 : 북마크 및 기록이 포함된 멀티탭 브라우징
+* 오프라인 지원 : 제품에 대한 데이터베이스 기반 캐싱
 
 ## 다운로드
 

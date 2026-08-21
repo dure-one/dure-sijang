@@ -37,7 +37,7 @@ pub fn android_main(app: AndroidApp) {
     log_capture::init_combined_logger(level_filter);
 
     log::info!(
-        "UAD-Shizuku v{} starting on Android",
+        "Dure-Sijang v{} starting on Android",
         env!("CARGO_PKG_VERSION")
     );
 
@@ -52,8 +52,8 @@ pub fn android_main(app: AndroidApp) {
     log::info!("Starting mobile application with egui");
 
     // Also use println! as backup logging method
-    println!("UAD-Shizuku: Application starting");
-    eprintln!("UAD-Shizuku: Error stream test");
+    println!("Dure-Sijang: Application starting");
+    eprintln!("Dure-Sijang: Error stream test");
 
     // Set up panic handler to catch crashes
     std::panic::set_hook(Box::new(|panic_info| {
@@ -80,11 +80,11 @@ pub fn android_main(app: AndroidApp) {
 
         // For other panics, log as errors
         log::error!("PANIC OCCURRED: {}", panic_info);
-        eprintln!("UAD-Shizuku PANIC: {}", panic_info);
+        eprintln!("Dure-Sijang PANIC: {}", panic_info);
         if let Some(location) = panic_info.location() {
             log::error!("Panic location: {}:{}", location.file(), location.line());
             eprintln!(
-                "UAD-Shizuku PANIC LOCATION: {}:{}",
+                "Dure-Sijang PANIC LOCATION: {}:{}",
                 location.file(),
                 location.line()
             );
@@ -100,7 +100,7 @@ pub fn android_main(app: AndroidApp) {
     };
 
     match eframe::run_native(
-        "UAD-Shizuku",
+        "Dure-Sijang",
         options,
         Box::new(|cc| {
             dure_sijang_app::init_egui(&cc.egui_ctx);

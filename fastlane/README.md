@@ -1,6 +1,6 @@
 # Fastlane Metadata for F-Droid
 
-This directory contains the fastlane metadata structure for F-Droid submission of UAD-Shizuku.
+This directory contains the fastlane metadata structure for F-Droid submission of Dure-Sijang.
 
 ## Directory Structure
 
@@ -24,9 +24,9 @@ fastlane/
 ## Files Included
 
 ### Required Files ✅
-- **title.txt**: "UAD-Shizuku"
-- **short_description.txt**: Android debloater and FOSS app manager description
-- **full_description.txt**: Comprehensive app description with debloating, scanning, and installation features
+- **title.txt**: "Dure-Sijang"
+- **short_description.txt**: Mycart designated browser with dual-mode browsing
+- **full_description.txt**: Comprehensive app description with WebView/API browsing modes, store directory sync, and shopping cart management
 
 ### Recommended Files ✅
 - **images/icon.png**: 512x512px app icon
@@ -44,7 +44,7 @@ To enhance the F-Droid listing, consider adding:
 
 ## F-Droid Compliance
 
-The UAD-Shizuku project is compliant with F-Droid inclusion policy:
+The Dure-Sijang project is compliant with F-Droid inclusion policy:
 
 ### ✅ License Requirements
 - Uses dual MIT/Apache-2.0 licensing (both FLOSS-approved)
@@ -59,9 +59,10 @@ The UAD-Shizuku project is compliant with F-Droid inclusion policy:
 ### ✅ Privacy & Security
 - No user tracking
 - No auto-updates bypassing F-Droid
-- Uses publicly available bloat lists and FOSS app catalogs
-- Optional VirusTotal integration (user provides own API key)
-- Proper application ID: pe.nikescar.dure_sijang
+- Synchronizes mycart store directory from dure.one
+- Optional webview mode for full website rendering
+- API mode for privacy-focused native UI interactions
+- Proper application ID: app.dure.sijang
 
 ### ✅ Source Code
 - Publicly available on GitHub

@@ -91,16 +91,16 @@ parts:
       [Desktop Entry]
       Version=1.0
       Type=Application
-      Name=UAD-Shizuku
-      GenericName=Android Debloater
-      Comment=Universal Android Debloater with Shizuku support
+      Name=Dure-Sijang
+      GenericName=Mycart Browser
+      Comment=Mycart browser - Browse multiple mycart stores with webview and API modes
       Exec=dure-sijang %U
       Icon=${SNAP}/meta/gui/icon.png
       Terminal=false
-      Categories=Utility;System;
-      Keywords=android;debloat;adb;shizuku;
+      Categories=Network;WebBrowser;
+      Keywords=mycart;browser;shopping;webview;api;
       StartupNotify=true
-      StartupWMClass=UAD-Shizuku
+      StartupWMClass=Dure-Sijang
       EOF
 
       # Install icon

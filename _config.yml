@@ -3,7 +3,7 @@
 # configuration for vite.docs solidbase https://github.com/dure-one/mdx-sitegen-solidbase
 # Site settings
 title: dure-sijang
-description: Android debloater, FOSS app scanner, and app installer via Shizuku/ADB.
+description: Mycart designated browser - Browse multiple mycart stores with webview and API modes.
 issue_link: "https://github.com/dure-one/dure-sijang/issues"
 edit_path: "https://github.com/dure-one/dure-sijang/edit/main/:path"
 lang: en

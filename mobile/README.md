@@ -53,7 +53,7 @@ $ adb logcat -c
 # full logcat
 $ adb logcat -v time -s *:V > fullcat.log
 # app specific logcat
-$ adb logcat -s UAD-Shizuku > uadcat.log
+$ adb logcat -s Dure-Sijang > uadcat.log
 ```
 
 ### Create Upload Keystore

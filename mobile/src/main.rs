@@ -30,7 +30,7 @@ fn show_opengl_instructions() {
     impl InstructionWindow {
         fn new() -> Self {
             let wnd = gui::WindowMain::new(gui::WindowMainOpts {
-                title: "UAD-Shizuku - OpenGL Required",
+                title: "Dure-Sijang - OpenGL Required",
                 size: (500, 280),
                 style: gui::WindowMainOpts::default().style | co::WS::MINIMIZEBOX,
                 ..Default::default()
@@ -180,7 +180,7 @@ fn main() -> eframe::Result<()> {
         .init();
 
         log::info!(
-            "UAD-Shizuku v{} starting with file logging",
+            "Dure-Sijang v{} starting with file logging",
             env!("CARGO_PKG_VERSION")
         );
     } else {
@@ -205,7 +205,7 @@ fn main() -> eframe::Result<()> {
         };
 
         dure_sijang::log_capture::init_combined_logger(level_filter);
-        log::info!("UAD-Shizuku v{} starting", env!("CARGO_PKG_VERSION"));
+        log::info!("Dure-Sijang v{} starting", env!("CARGO_PKG_VERSION"));
     }
 
     // Handle --uninstall argument (for Windows Add/Remove Programs)
@@ -309,7 +309,7 @@ fn main() -> eframe::Result<()> {
     };
 
     let result = eframe::run_native(
-        "UAD-Shizuku",
+        "Dure-Sijang",
         options,
         Box::new(|cc| {
             dure_sijang_app::init_egui(&cc.egui_ctx);

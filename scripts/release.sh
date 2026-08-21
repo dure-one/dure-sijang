@@ -5,7 +5,7 @@ cargo clippy --fix
 
 # Fetch latest release version from GitHub
 echo "Fetching latest release version..."
-LATEST_TAG=$(curl -s https://api.github.com/repos/nikescar/uad-shizuku/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+LATEST_TAG=$(curl -s https://api.github.com/repos/nikescar/dure-sijang/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
 echo "Latest release: $LATEST_TAG"
 
 # Extract version number (remove 'v' prefix) and increment patch version
