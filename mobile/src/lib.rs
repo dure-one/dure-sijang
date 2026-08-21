@@ -23,7 +23,7 @@ pub mod dlg_update_stt;
 pub mod db;
 pub mod db_browser;
 
-pub mod models;
+mod models;
 mod schema;
 
 pub mod log_capture;
