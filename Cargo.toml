@@ -1,0 +1,45 @@
+[workspace]
+resolver = "2"
+members = [
+    "mobile",
+]
+
+[workspace.package]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+rust-version = "1.81"
+version = "0.0.21"
+versioncode = "0.0.21"
+
+[workspace.dependencies]
+directories = "5.0"
+log = { version = "0.4", default-features = false }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt"] }
+
+egui = { version = "0.33", default-features = false, features = ["default_fonts"] }
+eframe = { version = "0.33", default-features = false, features = [
+    "default_fonts",
+    "glow",
+] }
+egui_extras = { version = "0.33", default-features = false, features = ["image", "all_loaders"] }
+egui-material3 = { git = "https://github.com/dure-one/egui-material3/", default-features = false }
+
+[patch.crates-io]
+resvg = { git = "https://github.com/dure-one/resvg" }
+usvg = { git = "https://github.com/dure-one/resvg" }
+android-activity = { git = "https://github.com/dure-one/android-activity.git" }
+# Use legitimate arrayref from git (crates.io version 0.3.10 is malware)
+arrayref = { git = "https://github.com/droundy/arrayref" }
+
+[profile.release]
+lto = true # "fat"
+codegen-units = 1
+opt-level = "z"
+debug = 0
+strip = "symbols"
+panic = "abort"
+
+[profile.release-with-symbols]
+inherits = "release"
+strip = false
