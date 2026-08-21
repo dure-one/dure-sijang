@@ -388,6 +388,41 @@ jobs:
         with:
           path: artifacts
 
+      - name: Debug - List Downloaded Artifacts
+        run: |
+          echo "=== Artifact directory structure ==="
+          find artifacts -type f -ls 2>/dev/null || true
+          echo ""
+          echo "=== Checking files for VirusTotal scan ==="
+          MISSING=0
+          FOUND=0
+          for file in \
+            ./artifacts/dure-sijang-aarch64-apple-darwin/dure-sijang \
+            ./artifacts/dure-sijang-aarch64-linux-android/dure-sijang \
+            ./artifacts/dure-sijang-aarch64-unknown-linux-musl/dure-sijang \
+            ./artifacts/dure-sijang-all-signed.apk/dure-sijang-all-signed.apk \
+            ./artifacts/dure-sijang-armv7-linux-androideabi/dure-sijang \
+            ./artifacts/dure-sijang-armv7-unknown-linux-musleabihf/dure-sijang \
+            ./artifacts/dure-sijang-x86_64-apple-darwin/dure-sijang \
+            ./artifacts/dure-sijang-x86_64-unknown-linux-musl/dure-sijang \
+            ./artifacts/dure-sijang-x86_64-unknown-freebsd/dure-sijang \
+            ./artifacts/dure-sijang-x86_64-pc-windows-msvc/dure-sijang-x86_64.exe \
+            ./artifacts/dure-sijang-i686-pc-windows-msvc/dure-sijang-i686.exe \
+            ./artifacts/dure-sijang-aarch64-pc-windows-msvc/dure-sijang-aarch64.exe; do
+            if [ -f "$file" ]; then
+              echo "✓ Found: $file ($(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "unknown") bytes)"
+              FOUND=$((FOUND + 1))
+            else
+              echo "✗ Missing: $file"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+          echo ""
+          echo "Summary: $FOUND found, $MISSING missing"
+          if [ $MISSING -gt 0 ]; then
+            echo "⚠️ Warning: Some build artifacts are missing. Check build job logs."
+          fi
+
       - name: Setup Python for VirusTotal Scan
         uses: actions/setup-python@v5
         with:
@@ -480,6 +515,7 @@ jobs:
           VT_RESULTS=""
 
           # Check if we have any results
+          VT_SCAN_COUNT=0
           if [ -z "$ANALYSIS" ]; then
             echo "Warning: No analysis output from VirusTotal scan"
             VT_RESULTS="⚠️ VirusTotal scan encountered errors. Some files may have been scanned previously (409 error)."
@@ -511,6 +547,7 @@ jobs:
 
               # Build markdown link
               VT_RESULTS="${VT_RESULTS}- **${identifier}**: [View VirusTotal Report](${url})\n"
+              VT_SCAN_COUNT=$((VT_SCAN_COUNT + 1))
             done
 
             # Check if we have formatted results
@@ -524,10 +561,17 @@ jobs:
           FORMATTED_RESULTS=""
 
           if [ -n "$CHANGELOG_CONTENT" ]; then
-            FORMATTED_RESULTS="${FORMATTED_RESULTS}## What's Changed\n${CHANGELOG_CONTENT}\n\n"
+            FORMATTED_RESULTS="${FORMATTED_RESULTS}## What's Changed\n${CHANGELOG_CONTENT}\n"
           fi
 
-          FORMATTED_RESULTS="${FORMATTED_RESULTS}## VirusTotal Scan Results\n${VT_RESULTS}"
+          # Add VirusTotal section with scan count
+          if [ $VT_SCAN_COUNT -gt 0 ]; then
+            FORMATTED_RESULTS="${FORMATTED_RESULTS}## VirusTotal Scan Results\n\n"
+            FORMATTED_RESULTS="${FORMATTED_RESULTS}✅ **${VT_SCAN_COUNT} files scanned**\n\n"
+            FORMATTED_RESULTS="${FORMATTED_RESULTS}${VT_RESULTS}"
+          else
+            FORMATTED_RESULTS="${FORMATTED_RESULTS}## VirusTotal Scan Results\n\n${VT_RESULTS}"
+          fi
 
           # Save to output (escape for GitHub Actions)
           echo "formatted_results<<EOF" >> $GITHUB_OUTPUT
