@@ -1,0 +1,30 @@
+Dure-Sijang is a cross-platform mycart browser for navigating multiple go-fiber backed mycart stores. Browse stores using either webview mode for full website rendering or API mode for native UI performance.
+
+<b>Features:</b>
+• Dual-mode browsing: WebView (full website) or API mode (native UI)
+• Store directory sync from dure.one for discovering mycart stores
+• Multi-tab browsing with persistent tabs and bookmarks
+• Shopping cart management in API mode with product browsing
+• Offline support with database-backed caching for products and carts
+• Cross-platform: Android, Linux, macOS, and Windows
+
+<b>Browsing Modes:</b>
+• WebView Mode: Embedded browser for full website rendering with wry
+• API Mode: Native egui UI calling mycart REST API directly for optimized performance
+
+<b>Store Management:</b>
+• Synchronize store listings from dure.one directory
+• Quick navigation between multiple mycart stores
+• Per-store bookmarks and browsing history
+• Persistent login credentials per store
+
+<b>How it works:</b>
+Connect to mycart stores via the dure.one directory. Browse products in webview mode for the full website experience, or switch to API mode for a native shopping interface with product grids and cart management. All tabs, bookmarks, and browsing history persist locally.
+
+<b>Supported Platforms:</b>
+• Android (5.0 Lollipop and above)
+• Windows (desktop binary)
+• macOS (desktop binary)
+• Linux (desktop binary)
+
+<b>Privacy:</b> Dure-Sijang uses the dure.one public directory for store listings. No personal data is collected or transmitted. Store credentials are stored locally in encrypted storage.

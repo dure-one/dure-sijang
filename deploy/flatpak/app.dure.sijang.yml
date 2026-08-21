@@ -1,0 +1,37 @@
+app-id: app.dure.sijang
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: dure-sijang
+separate-locales: false
+
+finish-args:
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --share=network
+  - --filesystem=xdg-config/dure-sijang:create
+  - --filesystem=xdg-data/dure-sijang:create
+  - --filesystem=/tmp:rw
+  - --device=all
+  - --system-talk-name=org.freedesktop.UDisks2
+  - --talk-name=org.freedesktop.portal.Desktop
+  - --device=dri
+
+modules:
+  - name: dure-sijang
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 dure-sijang /app/bin/dure-sijang
+      - install -Dm644 app.dure.sijang.desktop /app/share/applications/app.dure.sijang.desktop
+      - install -Dm644 app.dure.sijang.metainfo.xml /app/share/metainfo/app.dure.sijang.metainfo.xml
+      - install -Dm644 logo.png /app/share/icons/hicolor/256x256/apps/app.dure.sijang.png
+    sources:
+      - type: file
+        path: ../../artifacts/dure-sijang-x86_64-unknown-linux-musl/dure-sijang
+      - type: file
+        path: app.dure.sijang.desktop
+      - type: file
+        path: app.dure.sijang.metainfo.xml
+      - type: file
+        path: ../../imgs/logo.png

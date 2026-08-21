@@ -1,0 +1,45 @@
+name: Release to Snapstore
+
+on:
+  workflow_run:
+    workflows: ["Build and Release"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  publish-snap:
+    runs-on: ubuntu-latest
+    # Only publish when triggered by workflow_run from a tag starting with 'v'
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v') }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from Cargo.toml
+        id: version
+        run: |
+          VERSION=$(grep -m1 '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Found version: $VERSION"
+
+      - name: Update snap files
+        run: |
+          sed -i "s/{{VERSION}}/${{ steps.version.outputs.version }}/g" snap/snapcraft.yaml
+          echo "Updated snapcraft.yaml:"
+          cat snap/snapcraft.yaml
+
+      - name: Build snap
+        id: build
+        uses: snapcore/action-build@v1
+
+      - name: Publish to Snap Store
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPSTORE_LOGIN }}
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: stable

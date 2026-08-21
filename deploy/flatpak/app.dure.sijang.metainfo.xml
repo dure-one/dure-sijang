@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>app.dure.sijang</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>GPL-3.0</project_license>
+  <name>Dure-Sijang</name>
+  <summary>Mycart browser - Browse multiple mycart stores with webview and API modes</summary>
+  <description>
+    <p>
+      Dure-Sijang is a cross-platform mycart browser for navigating multiple go-fiber backed mycart stores.
+      Browse stores using either webview mode for full website rendering or API mode for native UI performance.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Dual-mode browsing: WebView (full website) or API mode (native UI)</li>
+      <li>Store directory sync from dure.one for discovering mycart stores</li>
+      <li>Multi-tab browsing with persistent tabs and bookmarks</li>
+      <li>Shopping cart management in API mode</li>
+      <li>Offline support with database-backed caching</li>
+      <li>Cross-platform: Linux, macOS, Windows, and Android</li>
+    </ul>
+  </description>
+  <categories>
+    <category>Utility</category>
+    <category>System</category>
+    <category>Network</category>
+  </categories>
+  <keywords>
+    <keyword>mycart</keyword>
+    <keyword>browser</keyword>
+    <keyword>shopping</keyword>
+    <keyword>webview</keyword>
+    <keyword>api</keyword>
+    <keyword>ecommerce</keyword>
+  </keywords>
+  <url type="homepage">https://github.com/dure-one/dure-sijang</url>
+  <url type="bugtracker">https://github.com/dure-one/dure-sijang/issues</url>
+  <url type="vcs-browser">https://github.com/dure-one/dure-sijang</url>
+  <launchable type="desktop-id">app.dure.sijang.desktop</launchable>
+  <provides>
+    <binary>dure-sijang</binary>
+  </provides>
+  <releases>
+    <release version="0.0.13" date="2026-03-27">
+      <description>
+        <p>Latest release with improved stability and features</p>
+      </description>
+    </release>
+  </releases>
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-info">none</content_attribute>
+  </content_rating>
+</component>

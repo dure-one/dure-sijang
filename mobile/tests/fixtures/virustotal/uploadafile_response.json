@@ -1,0 +1,10 @@
+{
+  "response_code": 1,
+  "verbose_msg": "Your file is queued for analysis",
+  "resource": "test-resource-id",
+  "scan_id": "test-scan-id",
+  "permalink": "https://www.virustotal.com/test",
+  "sha256": "test-sha256",
+  "md5": "test-md5",
+  "sha1": "test-sha1"
+}

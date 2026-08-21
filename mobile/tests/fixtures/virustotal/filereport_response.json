@@ -1,0 +1,13 @@
+{
+  "response_code": 1,
+  "verbose_msg": "Scan finished, information embedded",
+  "resource": "test-resource-id",
+  "scan_id": "test-scan-id",
+  "md5": "test-md5",
+  "sha1": "test-sha1",
+  "sha256": "test-sha256",
+  "scan_date": "2026-08-18 00:00:00",
+  "permalink": "https://www.virustotal.com/test",
+  "positives": 0,
+  "total": 60
+}

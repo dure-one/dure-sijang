@@ -1,0 +1,110 @@
+name: dure-sijang
+base: core22
+version: '{{VERSION}}'
+summary: Universal Android Debloater with Shizuku support
+description: |
+  DURE-SIJANG is application for remove bloat app selectively, get sha256sum of
+  installed foss android apps and install foss apps selectively.
+
+  Features:
+  * Debloat application with bloat app list selectively
+  * Get sha256sum of app list and scan with virustotal api
+  * Get android foss offa app list and install through obtanium
+  * Get android foss fmhy app list and install through obtanium
+
+  It supports android mode(apk) with adb wireless shizuku and
+  linux/macos/windows mode(binary) with adb platform-tools.
+
+  Open source, cross-platform, written in Rust.
+
+grade: stable
+confinement: strict
+compression: lzo
+
+architectures:
+  - build-on: amd64
+  - build-on: arm64
+
+apps:
+  dure-sijang:
+    command: dure-sijang
+    extensions: [gnome]
+    plugs:
+      - home
+      - removable-media
+      - network
+      - network-bind
+      - opengl
+      - x11
+      - wayland
+      - desktop
+      - desktop-legacy
+      - unity7
+    desktop: share/applications/dure-sijang.desktop
+    environment:
+      GTK_USE_PORTAL: 0
+
+parts:
+  dure-sijang:
+    plugin: dump
+    source: .
+    stage-packages:
+      - libgtk-3-0
+      - libgdk-pixbuf2.0-0
+      - libglib2.0-0
+      - libcairo2
+      - libpango-1.0-0
+      - libpangocairo-1.0-0
+      - libatk1.0-0
+      - ca-certificates
+    override-build: |
+      # Map snap architecture to release target triple
+      case "$CRAFT_TARGET_ARCH" in
+        amd64)
+          RUST_TARGET="x86_64-unknown-linux-musl"
+          ;;
+        arm64)
+          RUST_TARGET="aarch64-unknown-linux-musl"
+          ;;
+        armhf)
+          RUST_TARGET="armv7-unknown-linux-musleabihf"
+          ;;
+        *)
+          echo "Unsupported architecture: $CRAFT_TARGET_ARCH"
+          exit 1
+          ;;
+      esac
+
+      # Download precompiled binary from GitHub releases
+      DOWNLOAD_URL="https://github.com/dure-one/dure-sijang/releases/download/v{{VERSION}}/dure-sijang-${RUST_TARGET}.tar.gz"
+      echo "Downloading from: $DOWNLOAD_URL"
+
+      curl -L -o binary.tar.gz "$DOWNLOAD_URL"
+      tar -xzf binary.tar.gz
+
+      # Install binary
+      install -Dm755 dure-sijang $SNAPCRAFT_PART_INSTALL/dure-sijang
+
+      # Install desktop file
+      mkdir -p $SNAPCRAFT_PART_INSTALL/share/applications
+      cat > $SNAPCRAFT_PART_INSTALL/share/applications/dure-sijang.desktop << 'EOF'
+      [Desktop Entry]
+      Version=1.0
+      Type=Application
+      Name=UAD-Shizuku
+      GenericName=Android Debloater
+      Comment=Universal Android Debloater with Shizuku support
+      Exec=dure-sijang %U
+      Icon=${SNAP}/meta/gui/icon.png
+      Terminal=false
+      Categories=Utility;System;
+      Keywords=android;debloat;adb;shizuku;
+      StartupNotify=true
+      StartupWMClass=UAD-Shizuku
+      EOF
+
+      # Install icon
+      mkdir -p $SNAPCRAFT_PART_INSTALL/meta/gui
+      cp $SNAPCRAFT_PROJECT_DIR/imgs/logo512.png $SNAPCRAFT_PART_INSTALL/meta/gui/icon.png
+    build-packages:
+      - curl
