@@ -1,0 +1,139 @@
+[package]
+name = "mobile"
+build = "build.rs"
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+default-run = "dure-sijang"
+
+[features]
+default = ["serde"]
+desktop = []
+serde = ["dep:serde", "dep:serde_json"]
+
+[lib]
+name = "dure_sijang"
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "dure-sijang"
+path = "src/main.rs"
+
+[dependencies]
+log = { workspace = true }
+env_logger = { version = "0.11", default-features = false }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+lazy_static = "1.5"
+dark-light = "1.1"
+# egui related dependencies
+egui = { workspace = true }
+eframe = { workspace = true }
+egui_extras = { workspace = true }
+serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
+serde_json = { version = "1.0", features = ["std"], optional = true }
+serde_yaml = "0.9"
+egui-material3 = { workspace = true }
+egui-i18n = { version = "0.1.2", features = ["fluent"] }
+egui-async = "0.2"
+# downloads dependencies
+which = "8.0.0"
+ehttp = "0.5.0"
+zip = "4.2.0"
+tar = "0.4"
+flate2 = "1.1"
+dirs = "5.0"
+anyhow = "1.0"
+smol = "2.0"
+sys-locale = "0.3"
+ureq = "2.12"
+ureq_multipart = "1.1"
+regex = "1.12"
+chrono = { version = "0.4", features = ["serde"] }
+# jsonpath for parsing google play data
+jsonpath_lib = "0.3"
+base64 = "0.22"
+image = "0.25"
+md5 = "0.7"
+crossbeam-queue = "0.3"
+# html2md = "0.2"
+xee-xpath = "0.1.5"
+webbrowser = "1.1"
+# webview dependencies
+wry = "0.56"
+http = "1"
+raw-window-handle = "0.6"
+egui_webview = { git = "https://github.com/nikescar/egui_webview" }
+# diesel related dependencies
+diesel = { version = "2.3.0", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "chrono"] }
+diesel_migrations = "2.3.0"
+libsqlite3-sys = { version = "0.30", features = ["bundled"] }
+# wasm-specific dependencies | cargo build --target wasm32-unknown-unknown --release
+serde-wasm-bindgen = "0.6.5"
+wasm-bindgen = "0.2.114"
+wasm-bindgen-futures = "0.4.64"
+
+[dev-dependencies]
+diesel_migrations = { version = "2.3.0" }
+
+# Android specific dependencies
+[target.'cfg(target_os = "android")'.dependencies]
+ndk-context = { version = "0.1", default-features = false }
+jni = { version = "0.21", default-features = false }
+android_logger = { version = "0.15", default-features = false }
+android-activity = { git = "https://github.com/nikescar/android-activity.git", default-features = false, features = ["native-activity"] }
+ndk-sys = { version = "0.6.0", default-features = false }
+eframe = { workspace = true, default-features = false, features = ["default_fonts","glow","android-native-activity"] }
+
+# iOS specific dependencies
+[target.'cfg(target_os = "ios")'.dependencies]
+bevy = { version = "0.16.0", default-features = false, features = ["bevy_render", "bevy_core_pipeline", "bevy_sprite", "bevy_text", "bevy_ui", "bevy_winit"], optional = true }
+bevy_egui = { version = "0.35.1", default-features = false, optional = true }
+objc2-avf-audio = { version = "0.3.2", features = ["AVAudioSession", "AVAudioSessionTypes"] }
+
+# Linux-specific dependencies for proper windowing support
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+gdk = "0.18"
+eframe = { workspace = true, default-features = false, features = ["default_fonts","glow","x11", "wayland"] }
+
+# FreeBSD-specific dependencies (similar to Linux)
+[target.'cfg(target_os = "freebsd")'.dependencies]
+gtk = "0.18"
+gdk = "0.18"
+eframe = { workspace = true, default-features = false, features = ["default_fonts","glow","x11", "wayland"] }
+
+# OpenBSD-specific dependencies (similar to Linux)
+[target.'cfg(target_os = "openbsd")'.dependencies]
+gtk = "0.18"
+gdk = "0.18"
+eframe = { workspace = true, default-features = false, features = ["default_fonts","glow","x11"] }
+
+# Windows-specific dependencies
+[target.'cfg(target_os = "windows")'.dependencies]
+winapi = { version = "0.3", features = ["wincon", "winuser"] }
+winsafe = { version = "0.0.26", features = ["gui"] }
+windows = { version = "0.58", features = [
+    "Win32_UI_Shell",
+    "Win32_System_Com",
+    "Win32_Foundation",
+] }
+
+# Non-Android specific dependencies
+[target.'cfg(not(target_os = "android"))'.dependencies]
+directories = { workspace = true }
+
+# Desktop-only dependencies (excludes Android and WASM)
+[target.'cfg(not(any(target_os = "android", target_arch = "wasm32")))'.dependencies]
+trash = "5.2"
+
+# Wasm specific dependencies
+[target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
+sqlite-wasm-vfs = "0.1.1"
+sqlite-wasm-rs = "0.5.1"
+# eframe = { workspace = true, features = ["default_fonts","glow","web_screen_reader"] }
+
+[build-dependencies]
+winres = "0.1.12"
+ureq = "2.12"

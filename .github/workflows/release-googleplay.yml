@@ -1,0 +1,47 @@
+name: Publish to Google Play
+
+on:
+  workflow_run:
+    workflows: ["Build and Release"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  publish-googleplay:
+    name: Publish to Google Play
+    runs-on: ubuntu-22.04
+    # Only publish when triggered by workflow_run from a tag starting with 'v'
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v') }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Download AAB Artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: release.yml
+          run_id: ${{ github.event.workflow_run.id }}
+          workflow_conclusion: success
+          name: dure-sijang-all.aab
+          path: ./artifacts
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          check_artifacts: true
+          search_artifacts: true
+          if_no_artifact_found: fail
+
+      - name: Publish to Google Play
+        # https://github.com/marketplace/actions/upload-android-release-to-play-store
+        continue-on-error: true
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: pe.nikescar.dure_sijang
+          releaseFiles: ./artifacts/dure-sijang-all.aab
+          track: production # alpha/beta/production
+          status: completed
+          inAppUpdatePriority: 2

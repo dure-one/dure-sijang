@@ -1,0 +1,118 @@
+//! Android entry point for UAD-Shizuku
+//!
+//! Initializes the eframe app with Android-specific configuration
+
+use android_activity::AndroidApp;
+use eframe::NativeOptions;
+
+use crate::log_capture;
+use crate::dure_sijang_app::{self, DureSijangApp};
+use crate::Config;
+
+/// Android entry point
+#[no_mangle]
+pub fn android_main(app: AndroidApp) {
+    // Try to load user's log level from settings, default to ERROR if not found
+    let log_level = if let Ok(config) = Config::new() {
+        if let Ok(settings) = config.load_settings() {
+            settings.log_level.to_uppercase()
+        } else {
+            "ERROR".to_string()
+        }
+    } else {
+        "ERROR".to_string()
+    };
+
+    // Convert log level string to LevelFilter
+    let level_filter = match log_level.as_str() {
+        "TRACE" => log::LevelFilter::Trace,
+        "DEBUG" => log::LevelFilter::Debug,
+        "INFO" => log::LevelFilter::Info,
+        "WARN" => log::LevelFilter::Warn,
+        "ERROR" => log::LevelFilter::Error,
+        _ => log::LevelFilter::Error,
+    };
+
+    // Initialize combined logger that writes to both logcat and in-app log capture
+    log_capture::init_combined_logger(level_filter);
+
+    log::info!(
+        "UAD-Shizuku v{} starting on Android",
+        env!("CARGO_PKG_VERSION")
+    );
+
+    // Initialize common app components (database, i18n)
+    dure_sijang_app::init_common();
+
+    // NOTE: ShizukuBridge initialization is done lazily on first use
+    // because the Android context must be fully ready (inside eframe's render loop)
+
+    // Log initialization message to confirm logging is working
+    log::info!("Android logger initialized successfully");
+    log::info!("Starting mobile application with egui");
+
+    // Also use println! as backup logging method
+    println!("UAD-Shizuku: Application starting");
+    eprintln!("UAD-Shizuku: Error stream test");
+
+    // Set up panic handler to catch crashes
+    std::panic::set_hook(Box::new(|panic_info| {
+        let payload = panic_info.payload();
+
+        // Check for expected Android lifecycle-related panics
+        // These can occur when Android destroys the activity during normal operation
+        let is_expected_window_panic = if let Some(s) = payload.downcast_ref::<&str>() {
+            s.contains("winit window doesn't exist") || s.contains("window has been destroyed")
+        } else if let Some(s) = payload.downcast_ref::<String>() {
+            s.contains("winit window doesn't exist") || s.contains("window has been destroyed")
+        } else {
+            false
+        };
+
+        if is_expected_window_panic {
+            log::warn!(
+                "Expected window destruction during activity lifecycle change: {}",
+                panic_info
+            );
+            // Don't treat this as a critical error - it's normal during Android lifecycle
+            return;
+        }
+
+        // For other panics, log as errors
+        log::error!("PANIC OCCURRED: {}", panic_info);
+        eprintln!("UAD-Shizuku PANIC: {}", panic_info);
+        if let Some(location) = panic_info.location() {
+            log::error!("Panic location: {}:{}", location.file(), location.line());
+            eprintln!(
+                "UAD-Shizuku PANIC LOCATION: {}:{}",
+                location.file(),
+                location.line()
+            );
+        }
+    }));
+
+    std::env::set_var("RUST_BACKTRACE", "full");
+
+    let options = NativeOptions {
+        android_app: Some(app),
+        renderer: eframe::Renderer::Glow,
+        ..Default::default()
+    };
+
+    match eframe::run_native(
+        "UAD-Shizuku",
+        options,
+        Box::new(|cc| {
+            dure_sijang_app::init_egui(&cc.egui_ctx);
+            Ok(Box::new(DureSijangApp::new(cc)))
+        }),
+    ) {
+        Ok(_) => {
+            log::info!("DureSijangApp exited successfully");
+        }
+        Err(e) => {
+            log::error!("DureSijangApp failed: {}", e);
+            eprintln!("DureSijangApp failed: {}", e);
+        }
+    }
+}

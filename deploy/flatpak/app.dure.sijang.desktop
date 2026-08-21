@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Dure-Sijang
+Comment=Mycart browser - Browse multiple mycart stores with webview and API modes
+Exec=dure-sijang
+Icon=app.dure.sijang
+Categories=Utility;System;Network;
+Keywords=android;debloater;adb;shizuku;bloatware;foss;mycart;browser;shopping;
+StartupNotify=true
+StartupWMClass=dure-sijang

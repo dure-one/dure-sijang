@@ -1,0 +1,8 @@
+CREATE TABLE bookmarks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    url TEXT NOT NULL,
+    store_id INTEGER,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (store_id) REFERENCES store_directory(id) ON DELETE SET NULL
+);

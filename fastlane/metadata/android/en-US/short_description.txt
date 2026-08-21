@@ -1,0 +1,1 @@
+Mycart browser - Browse multiple mycart stores with webview and API modes
