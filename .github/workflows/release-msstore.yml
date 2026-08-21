@@ -20,7 +20,8 @@ jobs:
   publish-to-pages:
     name: Publish Windows Exe to GitHub Pages
     runs-on: ubuntu-22.04
-    if: ${{ (github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch') && github.event.workflow_run.head_branch != 'test' }}
+    # Only publish when triggered by workflow_run from a tag starting with 'v'
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v') }}
 
     steps:
       - name: Checkout Repository
@@ -44,7 +45,7 @@ jobs:
           run_id: ${{ github.event.workflow_run.id }}
           workflow_conclusion: success
           name_is_regexp: true
-          name: uad-shizuku-.*windows.*
+          name: dure-sijang-.*windows.*
           path: /tmp/artifacts
           github_token: ${{ secrets.GITHUB_TOKEN }}
           check_artifacts: true
@@ -88,7 +89,7 @@ jobs:
           mkdir -p "$VERSION"
 
           # Find and copy exe file to version folder (artifacts are extracted to directories)
-          find /tmp/artifacts -name "uad-shizuku.exe" -exec cp {} "$VERSION/uad-shizuku.exe" \;
+          find /tmp/artifacts -name "dure-sijang.exe" -exec cp {} "$VERSION/dure-sijang.exe" \;
 
           # List current versions
           echo "Current versions:"
@@ -131,12 +132,12 @@ jobs:
           echo "## Download URLs"
           echo ""
           echo "Latest version ($VERSION):"
-          echo "https://${OWNER_NAME}.github.io/${REPO_NAME#*/}/${VERSION}/uad-shizuku.exe"
+          echo "https://${OWNER_NAME}.github.io/${REPO_NAME#*/}/${VERSION}/dure-sijang.exe"
           echo ""
           echo "All versions:"
           VERSIONS=($(ls -d v* 2>/dev/null | sort -V -r))
           for v in "${VERSIONS[@]}"; do
-            echo "- https://${OWNER_NAME}.github.io/${REPO_NAME#*/}/${v}/uad-shizuku.exe"
+            echo "- https://${OWNER_NAME}.github.io/${REPO_NAME#*/}/${v}/dure-sijang.exe"
           done
           echo ""
           echo "Index page: https://${OWNER_NAME}.github.io/${REPO_NAME#*/}/"
