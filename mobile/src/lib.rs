@@ -23,13 +23,14 @@ pub mod dlg_update_stt;
 pub mod db;
 pub mod db_browser;
 
-mod models;
+pub mod models;
 mod schema;
 
 pub mod log_capture;
 
 // Export modules for external use
 pub use dure_sijang_app::{DureSijangApp as GuiApp, View};
+pub use dure_sijang_app::DureSijangApp;
 
 pub mod material_symbol_icons;
 
