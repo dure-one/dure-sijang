@@ -23,14 +23,12 @@ eframe = { version = "0.33", default-features = false, features = [
     "glow",
 ] }
 egui_extras = { version = "0.33", default-features = false, features = ["image", "all_loaders"] }
-egui-material3 = { git = "https://github.com/dure-one/egui-material3/", default-features = false }
+egui-material3 = { git = "https://github.com/nikescar/egui-material3/", default-features = false }
 
 [patch.crates-io]
-resvg = { git = "https://github.com/dure-one/resvg" }
-usvg = { git = "https://github.com/dure-one/resvg" }
-android-activity = { git = "https://github.com/dure-one/android-activity.git" }
-# Use legitimate arrayref from git (crates.io version 0.3.10 is malware)
-arrayref = { git = "https://github.com/droundy/arrayref" }
+resvg = { git = "https://github.com/nikescar/resvg" }
+usvg = { git = "https://github.com/nikescar/resvg" }
+android-activity = { git = "https://github.com/nikescar/android-activity.git" }
 
 [profile.release]
 lto = true # "fat"
