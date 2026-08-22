@@ -1158,8 +1158,11 @@ impl DureSijangApp {
     /// * `idx` - Tab index to close
     pub fn close_browser_tab(&mut self, idx: usize) {
         if idx >= self.browser_state.tabs.len() {
+            log::warn!("Attempted to close invalid tab index {}", idx);
             return;
         }
+
+        log::info!("Closing tab {} (active: {:?})", idx, self.browser_state.active_tab_index);
 
         let tab_id = self.browser_state.tabs[idx].id;
 
@@ -1172,15 +1175,44 @@ impl DureSijangApp {
             }
         }
 
-        // Remove Android WebView (Android-only)
+        // If closing active tab on Android, destroy WebViewActivity first
         #[cfg(target_os = "android")]
-        {
-            self.android_webview_manager.remove_webview(&tab_id);
-            log::info!("Destroyed Android WebView for tab {:?}", tab_id);
+        if self.browser_state.active_tab_index == Some(idx) {
+            if let Err(e) = crate::android_activity_embedding::destroy_webview_activity() {
+                log::warn!("Failed to destroy WebView when closing tab: {}", e);
+            }
         }
 
         // Remove tab metadata
         self.browser_state.close_tab(idx);
+
+        // Calculate new active tab if we closed the active one
+        if self.browser_state.active_tab_index == Some(idx) {
+            let new_active = if idx > 0 {
+                Some(idx - 1)
+            } else if !self.browser_state.tabs.is_empty() {
+                Some(0)
+            } else {
+                None
+            };
+
+            log::info!("New active tab after close: {:?}", new_active);
+
+            // Launch WebView for new active tab on Android
+            #[cfg(target_os = "android")]
+            if let Some(new_idx) = new_active {
+                let url = self.browser_state.tabs[new_idx].url_bar.clone();
+                if let Err(e) = crate::android_activity_embedding::launch_webview_activity(&url, new_idx as i32) {
+                    log::error!("Failed to launch WebView for new active tab: {}", e);
+                }
+            }
+
+            self.browser_state.active_tab_index = new_active;
+            if let Some(idx) = new_active {
+                self.browser_state.url_input = self.browser_state.tabs[idx].url_bar.clone();
+            }
+        }
+
         log::info!("Closed browser tab at index {}", idx);
     }
 
@@ -1548,6 +1580,23 @@ impl DureSijangApp {
                                 {
                                     log::info!("Switching active tab from {:?} to {}",
                                                self.browser_state.active_tab_index, idx);
+
+                                    #[cfg(target_os = "android")]
+                                    {
+                                        // Destroy old WebViewActivity
+                                        if let Err(e) = crate::android_activity_embedding::destroy_webview_activity() {
+                                            log::warn!("Failed to destroy old WebView: {}", e);
+                                        }
+
+                                        // Launch new WebViewActivity for clicked tab
+                                        let url = self.browser_state.tabs[idx].url_bar.clone();
+                                        if let Err(e) = crate::android_activity_embedding::launch_webview_activity(&url, idx as i32) {
+                                            log::error!("Failed to switch to tab {}: {}", idx, e);
+                                        } else {
+                                            log::info!("Switched to tab {} at {}", idx, url);
+                                        }
+                                    }
+
                                     self.browser_state.active_tab_index = Some(idx);
                                     self.browser_state.url_input = tab.url_bar.clone();
                                 }
