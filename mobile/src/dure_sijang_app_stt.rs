@@ -163,6 +163,8 @@ pub struct DureSijangApp {
     pub zoom_factor: f32,
 
     // WebView widgets (stored separately from BrowserState metadata)
+    // Desktop-only: egui_webview is not available on Android
+    #[cfg(not(target_os = "android"))]
     pub webview_widgets: std::collections::HashMap<egui::Id, egui_webview::EguiWebView>,
 
     // Browser state (MVVM)
