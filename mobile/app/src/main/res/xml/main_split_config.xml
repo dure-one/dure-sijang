@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<split-config xmlns:window="http://schemas.android.com/apk/res-auto">
+    <SplitPairRule
+        window:splitRatio="0.3"
+        window:splitLayoutDirection="topToBottom"
+        window:finishPrimaryWithSecondary="never"
+        window:finishSecondaryWithPrimary="always"
+        window:clearTop="false">
+
+        <SplitPairFilter
+            window:primaryActivityName=".NativeActivity"
+            window:secondaryActivityName=".WebViewActivity"/>
+    </SplitPairRule>
+</split-config>
