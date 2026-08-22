@@ -281,6 +281,9 @@ impl DureSijangApp {
     pub fn new(cc: &eframe::CreationContext) -> Self {
         let mut app = Self::default();
 
+        // Initialize browser with default tabs
+        app.initialize_browser();
+
         // Capture window handle for webview parent (NEW - Task 5)
 
         app
@@ -959,6 +962,26 @@ impl eframe::App for DureSijangApp {
                 }
             }
 
+            // Launch initial WebView for active tab (Android only)
+            #[cfg(target_os = "android")]
+            {
+                if let Some(active_idx) = self.browser_state.active_tab_index {
+                    if active_idx < self.browser_state.tabs.len() {
+                        let url = self.browser_state.tabs[active_idx].url_bar.clone();
+                        log::info!("First update - launching initial WebView for tab {} at {}", active_idx, url);
+
+                        if let Err(e) = crate::android_activity_embedding::launch_webview_activity(
+                            &url,
+                            active_idx as i32,
+                        ) {
+                            log::error!("Failed to launch initial WebView: {}", e);
+                        } else {
+                            log::info!("Successfully launched initial WebView");
+                        }
+                    }
+                }
+            }
+
             // Check for updates if autoupdate is enabled
             if self.settings.autoupdate {
                 self.check_for_update();
@@ -1061,6 +1084,28 @@ impl DureSijangApp {
     // ===== Browser UI Methods (MVVM Browser Integration) =====
 
     /// Add a new browser tab (desktop-only)
+    /// Initialize browser with default tabs on first launch
+    fn initialize_browser(&mut self) {
+        // If no tabs exist (first launch), create 2 default tabs
+        if self.browser_state.tabs.is_empty() {
+            log::info!("First launch - creating 2 default tabs");
+
+            // Create 2 tabs to dure.app (metadata only, no WebView yet)
+            self.browser_state.add_tab("https://dure.app", "dure.app");
+            self.browser_state.add_tab("https://dure.app", "dure.app");
+
+            // Set first tab as active
+            self.browser_state.active_tab_index = Some(0);
+            self.browser_state.url_input = "https://dure.app".to_string();
+
+            log::info!(
+                "Created {} tabs, active tab: {:?}",
+                self.browser_state.tabs.len(),
+                self.browser_state.active_tab_index
+            );
+        }
+    }
+
     ///
     /// # Arguments
     /// * `ctx` - egui context
@@ -1082,7 +1127,7 @@ impl DureSijangApp {
         log::info!("Added browser tab {:?} with URL: {}", tab_id, url);
     }
 
-    /// Add a new browser tab (Android - uses wry)
+    /// Add a new browser tab (Android - uses Activity Embedding)
     ///
     /// # Arguments
     /// * `ctx` - egui context
@@ -1093,20 +1138,18 @@ impl DureSijangApp {
         // Create tab metadata
         let tab_id = self.browser_state.add_tab(url, url);
 
-        // Create WebView using AndroidWebViewManager
-        // Frame implements HasWindowHandle directly
-        if let Err(e) = self.android_webview_manager.create_webview(
-            tab_id,
+        // Android: Launch WebViewActivity via JNI
+        let tab_index = self.browser_state.tabs.len() - 1;
+        if let Err(e) = crate::android_activity_embedding::launch_webview_activity(
             url,
-            frame,
+            tab_index as i32,
         ) {
-            log::error!("Failed to create Android WebView: {}", e);
-            // Remove tab metadata if WebView creation failed
-            self.browser_state.close_tab(self.browser_state.tabs.len() - 1);
-            return;
+            log::error!("Failed to launch WebViewActivity for tab {}: {}", tab_index, e);
+            // Remove tab metadata on failure
+            self.browser_state.close_tab(tab_index);
+        } else {
+            log::info!("Launched WebViewActivity for new tab {}", tab_index);
         }
-
-        log::info!("Added Android browser tab {:?} with URL: {}", tab_id, url);
     }
 
     /// Close a browser tab by index
