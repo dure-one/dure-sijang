@@ -1488,13 +1488,13 @@ impl DureSijangApp {
                             }
                         }
 
-                        // Navigate Android WebView (Android-only)
+                        // Navigate Android WebView via Activity Embedding
                         #[cfg(target_os = "android")]
                         {
-                            if let Err(e) = self.android_webview_manager.navigate(&tab_id, &url) {
-                                log::error!("Failed to navigate Android WebView: {}", e);
+                            if let Err(e) = crate::android_activity_embedding::navigate_webview(&url) {
+                                log::error!("Failed to navigate WebView to {}: {}", url, e);
                             } else {
-                                log::info!("Navigated Android tab {} to {}", idx, url);
+                                log::info!("WebView navigation successful to {}", url);
                             }
                         }
 
@@ -1522,13 +1522,13 @@ impl DureSijangApp {
                             }
                         }
 
-                        // Navigate Android WebView (Android-only)
+                        // Navigate Android WebView via Activity Embedding
                         #[cfg(target_os = "android")]
                         {
-                            if let Err(e) = self.android_webview_manager.navigate(&tab_id, &url) {
-                                log::error!("Failed to navigate Android WebView: {}", e);
+                            if let Err(e) = crate::android_activity_embedding::navigate_webview(&url) {
+                                log::error!("Failed to navigate WebView to {}: {}", url, e);
                             } else {
-                                log::info!("Navigated Android tab {} to {}", idx, url);
+                                log::info!("WebView navigation successful to {}", url);
                             }
                         }
 
