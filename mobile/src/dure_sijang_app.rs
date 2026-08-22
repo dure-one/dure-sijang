@@ -1093,14 +1093,12 @@ impl DureSijangApp {
         // Create tab metadata
         let tab_id = self.browser_state.add_tab(url, url);
 
-        // Get raw window handle from frame for wry
-        use raw_window_handle::HasRawWindowHandle;
-
         // Create WebView using AndroidWebViewManager
+        // Frame implements HasWindowHandle directly
         if let Err(e) = self.android_webview_manager.create_webview(
             tab_id,
             url,
-            frame.info().window_info.window.as_ref(),
+            frame,
         ) {
             log::error!("Failed to create Android WebView: {}", e);
             // Remove tab metadata if WebView creation failed
