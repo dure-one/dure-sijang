@@ -10,6 +10,7 @@ mod android_contexttheme;
 mod android_inputmethod;
 mod android_packagemanager;
 pub mod android_shizuku;
+mod android_webview;
 mod clipboard_popup;
 mod dlg_about;
 pub mod dlg_about_stt;
