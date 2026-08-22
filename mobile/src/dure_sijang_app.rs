@@ -19,6 +19,9 @@ pub use crate::dure_sijang_app_stt::*;
 use crate::{Config, Settings};
 use crate::browser_stt::SidebarTab;
 
+// Maximum number of tabs to prevent memory issues
+const MAX_TABS: usize = 20;
+
 use crate::install;
 #[cfg(not(target_os = "android"))]
 use crate::install_stt::InstallStatus;
@@ -1113,6 +1116,12 @@ impl DureSijangApp {
     /// * `url` - Initial URL to load
     #[cfg(not(target_os = "android"))]
     pub fn add_browser_tab(&mut self, ctx: &egui::Context, frame: &eframe::Frame, url: &str) {
+        // Check tab limit
+        if self.browser_state.tabs.len() >= MAX_TABS {
+            log::warn!("Cannot create tab: maximum {} tabs reached", MAX_TABS);
+            return;
+        }
+
         // Create tab metadata
         let tab_id = self.browser_state.add_tab(url, url);
 
@@ -1135,6 +1144,12 @@ impl DureSijangApp {
     /// * `url` - Initial URL to load
     #[cfg(target_os = "android")]
     pub fn add_browser_tab(&mut self, ctx: &egui::Context, frame: &eframe::Frame, url: &str) {
+        // Check tab limit
+        if self.browser_state.tabs.len() >= MAX_TABS {
+            log::warn!("Cannot create tab: maximum {} tabs reached", MAX_TABS);
+            return;
+        }
+
         // Create tab metadata
         let tab_id = self.browser_state.add_tab(url, url);
 
@@ -1557,8 +1572,13 @@ impl DureSijangApp {
                         ui.heading("No tabs open");
                         ui.label("Click '+' to create a new tab.");
                         ui.add_space(20.0);
-                        if ui.button("+ New Tab").clicked() {
+                        let can_add_tab = self.browser_state.tabs.len() < MAX_TABS;
+                        let add_button = ui.add_enabled(can_add_tab, egui::Button::new("+ New Tab"));
+                        if add_button.clicked() {
                             self.add_browser_tab(ui.ctx(), frame, "https://dure.app");
+                        }
+                        if !can_add_tab {
+                            add_button.on_disabled_hover_text("Maximum 20 tabs. Close some tabs to create new ones.");
                         }
                     });
                 });
@@ -1610,8 +1630,13 @@ impl DureSijangApp {
                         }
 
                         // + button to add new tab
-                        if ui.button("+").clicked() {
+                        let can_add_tab = self.browser_state.tabs.len() < MAX_TABS;
+                        let add_button = ui.add_enabled(can_add_tab, egui::Button::new("+"));
+                        if add_button.clicked() {
                             self.add_browser_tab(ui.ctx(), frame, "https://dure.app");
+                        }
+                        if !can_add_tab {
+                            add_button.on_disabled_hover_text("Maximum 20 tabs. Close some tabs to create new ones.");
                         }
 
                         // Close tab after iteration (avoid borrow conflict)
