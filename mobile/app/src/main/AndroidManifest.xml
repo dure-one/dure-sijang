@@ -34,15 +34,17 @@
             <meta-data android:name="android.app.lib_name" android:value="dure_sijang" />
         </activity>
 
-        <!-- WebView Activity for proper AppCompatActivity lifecycle -->
+        <!-- WebView Activity for Activity Embedding split-screen -->
         <activity
             android:name="app.dure.sijang.WebViewActivity"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
-            android:hardwareAccelerated="true">
-            <!-- Not exported: only launched from within app -->
-        </activity>
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+
+        <!-- Enable Activity Embedding for split-screen support -->
+        <property
+            android:name="android.window.PROPERTY_ACTIVITY_EMBEDDING_SPLITS_ENABLED"
+            android:value="true" />
     </application>
 
 </manifest>
