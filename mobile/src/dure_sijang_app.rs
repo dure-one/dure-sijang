@@ -1,6 +1,7 @@
 #![doc(hidden)]
 
 use std::cell::Cell;
+#[cfg(not(target_os = "android"))]
 use std::collections::HashMap;
 use std::process;
 use std::sync::{Arc, Mutex};
@@ -9,7 +10,7 @@ use sys_locale::get_locale;
 use eframe::egui;
 use egui_i18n::tr;
 use egui_material3::menu::{Corner, FocusState, Positioning};
-use egui_material3::{dialog, menu, menu_item, MaterialButton};
+use egui_material3::{menu, menu_item, MaterialButton};
 use egui_material3::{get_global_theme, ContrastLevel, ThemeMode};
 
 use crate::LogLevel;
@@ -982,13 +983,14 @@ impl eframe::App for DureSijangApp {
 
 // ===== WebView Management Methods (NEW - Task 5) =====
 impl DureSijangApp {
-    /// Navigate the webview back in history
+    /// Navigate the webview back in history (desktop-only)
     ///
     /// # Arguments
     /// * `idx` - Tab index
     ///
     /// # Returns
     /// Ok(()) on success, Err if tab not found or navigation fails
+    #[cfg(not(target_os = "android"))]
     pub fn navigate_back(&mut self, idx: usize) -> anyhow::Result<()> {
         if idx >= self.browser_state.tabs.len() {
             anyhow::bail!("Tab index {} out of bounds", idx);
@@ -1003,13 +1005,14 @@ impl DureSijangApp {
         }
     }
 
-    /// Navigate the webview forward in history
+    /// Navigate the webview forward in history (desktop-only)
     ///
     /// # Arguments
     /// * `idx` - Tab index
     ///
     /// # Returns
     /// Ok(()) on success, Err if tab not found or navigation fails
+    #[cfg(not(target_os = "android"))]
     pub fn navigate_forward(&mut self, idx: usize) -> anyhow::Result<()> {
         if idx >= self.browser_state.tabs.len() {
             anyhow::bail!("Tab index {} out of bounds", idx);
@@ -1024,13 +1027,14 @@ impl DureSijangApp {
         }
     }
 
-    /// Reload the current page in the webview
+    /// Reload the current page in the webview (desktop-only)
     ///
     /// # Arguments
     /// * `idx` - Tab index
     ///
     /// # Returns
     /// Ok(()) on success, Err if tab not found or reload fails
+    #[cfg(not(target_os = "android"))]
     pub fn navigate_reload(&mut self, idx: usize) -> anyhow::Result<()> {
         use anyhow::Context;
 
@@ -1178,7 +1182,8 @@ impl DureSijangApp {
             }
         });
 
-        // Handle bookmark actions after rendering
+        // Handle bookmark actions after rendering (desktop-only)
+        #[cfg(not(target_os = "android"))]
         if let Some((url, title)) = bookmark_to_navigate {
             // Create new tab with bookmarked URL
             app.add_browser_tab(ui.ctx(), frame, &url);
@@ -1410,6 +1415,7 @@ impl DureSijangApp {
                         ui.heading("No tabs open");
                         ui.label("Click '+' to create a new tab.");
                         ui.add_space(20.0);
+                        #[cfg(not(target_os = "android"))]
                         if ui.button("+ New Tab").clicked() {
                             self.add_browser_tab(ui.ctx(), frame, "https://dure.app");
                         }
@@ -1445,7 +1451,8 @@ impl DureSijangApp {
                             ui.add_space(2.0); // Add space between tabs
                         }
 
-                        // + button to add new tab
+                        // + button to add new tab (desktop-only)
+                        #[cfg(not(target_os = "android"))]
                         if ui.button("+").clicked() {
                             self.add_browser_tab(ui.ctx(), frame, "https://dure.app");
                         }
