@@ -5,11 +5,9 @@
 /// as native Android View components.
 
 #[cfg(target_os = "android")]
-use wry::WebViewBuilder;
+use wry::{WebViewBuilder, WebView};
 #[cfg(target_os = "android")]
-use wry::WebView;
-#[cfg(target_os = "android")]
-use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use raw_window_handle::HasWindowHandle;
 use std::collections::HashMap;
 
 /// Manages WebView instances on Android
@@ -36,16 +34,16 @@ impl AndroidWebViewManager {
         &mut self,
         tab_id: egui::Id,
         url: &str,
-        window_handle: &dyn HasRawWindowHandle,
+        window: &impl HasWindowHandle,
     ) -> anyhow::Result<()> {
         log::info!("Creating Android WebView for tab {:?} with URL: {}", tab_id, url);
 
         // Create WebView using wry
-        let webview = WebViewBuilder::new_as_child(window_handle)
+        let webview = WebViewBuilder::new()
             .with_url(url)
             .with_user_agent("Mozilla/5.0 (Linux; Android) DureSijang/1.0")
             .with_accept_first_mouse(true)
-            .build()?;
+            .build_as_child(window)?;
 
         self.webviews.insert(tab_id, webview);
         self.active_webview = Some(tab_id);
