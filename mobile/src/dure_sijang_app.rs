@@ -1482,7 +1482,6 @@ impl DureSijangApp {
                         ui.heading("No tabs open");
                         ui.label("Click '+' to create a new tab.");
                         ui.add_space(20.0);
-                        #[cfg(not(target_os = "android"))]
                         if ui.button("+ New Tab").clicked() {
                             self.add_browser_tab(ui.ctx(), frame, "https://dure.app");
                         }
@@ -1518,8 +1517,7 @@ impl DureSijangApp {
                             ui.add_space(2.0); // Add space between tabs
                         }
 
-                        // + button to add new tab (desktop-only)
-                        #[cfg(not(target_os = "android"))]
+                        // + button to add new tab
                         if ui.button("+").clicked() {
                             self.add_browser_tab(ui.ctx(), frame, "https://dure.app");
                         }
