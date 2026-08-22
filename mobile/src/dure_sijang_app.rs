@@ -10,7 +10,7 @@ use sys_locale::get_locale;
 use eframe::egui;
 use egui_i18n::tr;
 use egui_material3::menu::{Corner, FocusState, Positioning};
-use egui_material3::{menu, menu_item, MaterialButton};
+use egui_material3::{dialog, menu, menu_item, MaterialButton};
 use egui_material3::{get_global_theme, ContrastLevel, ThemeMode};
 
 use crate::LogLevel;
@@ -1318,6 +1318,7 @@ impl DureSijangApp {
                     MaterialButton::filled(&crate::material_symbol_icons::icon_text("arrow_back"))
                         .small()
                 );
+                #[cfg(not(target_os = "android"))]
                 if back_btn.clicked() {
                     if let Some(idx) = self.browser_state.active_tab_index {
                         if let Err(e) = self.navigate_back(idx) {
@@ -1335,6 +1336,7 @@ impl DureSijangApp {
                     MaterialButton::filled(&crate::material_symbol_icons::icon_text("arrow_forward"))
                         .small()
                 );
+                #[cfg(not(target_os = "android"))]
                 if fwd_btn.clicked() {
                     if let Some(idx) = self.browser_state.active_tab_index {
                         if let Err(e) = self.navigate_forward(idx) {
