@@ -250,6 +250,10 @@ impl Default for DureSijangApp {
             #[cfg(not(target_os = "android"))]
             webview_widgets: HashMap::new(),
 
+            // Android WebView manager
+            #[cfg(target_os = "android")]
+            android_webview_manager: crate::android_webview::AndroidWebViewManager::new(),
+
             // Browser state (MVVM)
             browser_state: crate::browser_stt::BrowserState::load_from_db(),
         };
