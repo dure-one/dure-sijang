@@ -1082,6 +1082,35 @@ impl DureSijangApp {
         log::info!("Added browser tab {:?} with URL: {}", tab_id, url);
     }
 
+    /// Add a new browser tab (Android - uses wry)
+    ///
+    /// # Arguments
+    /// * `ctx` - egui context
+    /// * `frame` - eframe frame
+    /// * `url` - Initial URL to load
+    #[cfg(target_os = "android")]
+    pub fn add_browser_tab(&mut self, ctx: &egui::Context, frame: &eframe::Frame, url: &str) {
+        // Create tab metadata
+        let tab_id = self.browser_state.add_tab(url, url);
+
+        // Get raw window handle from frame for wry
+        use raw_window_handle::HasRawWindowHandle;
+
+        // Create WebView using AndroidWebViewManager
+        if let Err(e) = self.android_webview_manager.create_webview(
+            tab_id,
+            url,
+            frame.info().window_info.window.as_ref(),
+        ) {
+            log::error!("Failed to create Android WebView: {}", e);
+            // Remove tab metadata if WebView creation failed
+            self.browser_state.close_tab(self.browser_state.tabs.len() - 1);
+            return;
+        }
+
+        log::info!("Added Android browser tab {:?} with URL: {}", tab_id, url);
+    }
+
     /// Close a browser tab by index
     ///
     /// # Arguments
@@ -1091,14 +1120,22 @@ impl DureSijangApp {
             return;
         }
 
+        let tab_id = self.browser_state.tabs[idx].id;
+
         // Remove webview widget before removing tab metadata (desktop-only)
         #[cfg(not(target_os = "android"))]
         {
-            let tab_id = self.browser_state.tabs[idx].id;
             if let Some(_view) = self.webview_widgets.remove(&tab_id) {
                 log::info!("Destroyed webview for tab {:?}", tab_id);
                 // Drop will handle cleanup
             }
+        }
+
+        // Remove Android WebView (Android-only)
+        #[cfg(target_os = "android")]
+        {
+            self.android_webview_manager.remove_webview(&tab_id);
+            log::info!("Destroyed Android WebView for tab {:?}", tab_id);
         }
 
         // Remove tab metadata
@@ -1366,15 +1403,28 @@ impl DureSijangApp {
                         self.browser_state.update_tab_url(idx, &url, None);
                         // Update URL input to show full URL
                         self.browser_state.url_input = url.clone();
+
+                        let tab_id = self.browser_state.tabs[idx].id;
+
                         // Navigate webview widget (desktop-only)
                         #[cfg(not(target_os = "android"))]
                         {
-                            let tab_id = self.browser_state.tabs[idx].id;
                             if let Some(view) = self.webview_widgets.get(&tab_id) {
                                 let _ = view.view.load_url(&url);
                                 log::info!("Navigated tab {} to {}", idx, url);
                             }
                         }
+
+                        // Navigate Android WebView (Android-only)
+                        #[cfg(target_os = "android")]
+                        {
+                            if let Err(e) = self.android_webview_manager.navigate(&tab_id, &url) {
+                                log::error!("Failed to navigate Android WebView: {}", e);
+                            } else {
+                                log::info!("Navigated Android tab {} to {}", idx, url);
+                            }
+                        }
+
                         self.browser_state.refresh_history();
                     }
                 }
@@ -1387,15 +1437,28 @@ impl DureSijangApp {
                         self.browser_state.update_tab_url(idx, &url, None);
                         // Update URL input to show full URL
                         self.browser_state.url_input = url.clone();
+
+                        let tab_id = self.browser_state.tabs[idx].id;
+
                         // Navigate webview widget (desktop-only)
                         #[cfg(not(target_os = "android"))]
                         {
-                            let tab_id = self.browser_state.tabs[idx].id;
                             if let Some(view) = self.webview_widgets.get(&tab_id) {
                                 let _ = view.view.load_url(&url);
                                 log::info!("Navigated tab {} to {}", idx, url);
                             }
                         }
+
+                        // Navigate Android WebView (Android-only)
+                        #[cfg(target_os = "android")]
+                        {
+                            if let Err(e) = self.android_webview_manager.navigate(&tab_id, &url) {
+                                log::error!("Failed to navigate Android WebView: {}", e);
+                            } else {
+                                log::info!("Navigated Android tab {} to {}", idx, url);
+                            }
+                        }
+
                         self.browser_state.refresh_history();
                     }
                 }
