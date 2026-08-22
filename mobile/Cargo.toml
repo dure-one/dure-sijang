@@ -83,6 +83,10 @@ android_logger = { version = "0.15", default-features = false }
 android-activity = { git = "https://github.com/nikescar/android-activity.git", default-features = false, features = ["native-activity"] }
 ndk-sys = { version = "0.6.0", default-features = false }
 eframe = { workspace = true, default-features = false, features = ["default_fonts","glow","android-native-activity"] }
+# WebView support for Android using wry
+wry = { version = "0.56", default-features = false }
+http = "1"
+raw-window-handle = "0.6"
 
 # iOS specific dependencies
 [target.'cfg(target_os = "ios")'.dependencies]
@@ -130,12 +134,6 @@ wry = "0.56"
 http = "1"
 raw-window-handle = "0.6"
 egui_webview = { git = "https://github.com/nikescar/egui_webview", branch = "fix/nativeactivity-webview-launch" }
-
-# Android webview support (wry for Android)
-[target.'cfg(target_os = "android")'.dependencies]
-wry = { version = "0.56", default-features = false }
-http = "1"
-raw-window-handle = "0.6"
 
 # Wasm specific dependencies
 [target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
