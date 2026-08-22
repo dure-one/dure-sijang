@@ -131,6 +131,12 @@ http = "1"
 raw-window-handle = "0.6"
 egui_webview = { git = "https://github.com/nikescar/egui_webview", branch = "fix/nativeactivity-webview-launch" }
 
+# Android webview support (wry for Android)
+[target.'cfg(target_os = "android")'.dependencies]
+wry = { version = "0.56", default-features = false }
+http = "1"
+raw-window-handle = "0.6"
+
 # Wasm specific dependencies
 [target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
 sqlite-wasm-vfs = "0.1.1"
