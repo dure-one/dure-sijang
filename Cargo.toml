@@ -3,6 +3,9 @@ resolver = "2"
 members = [
     "mobile",
 ]
+exclude = [
+    "reference/egui_webview",
+]
 
 [workspace.package]
 edition = "2021"

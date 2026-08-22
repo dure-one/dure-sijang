@@ -60,11 +60,9 @@ crossbeam-queue = "0.3"
 # html2md = "0.2"
 xee-xpath = "0.1.5"
 webbrowser = "1.1"
-# webview dependencies
-wry = "0.56"
-http = "1"
-raw-window-handle = "0.6"
-egui_webview = { git = "https://github.com/nikescar/egui_webview" }
+# webview dependencies (conditional - see platform-specific sections below)
+# wry and egui_webview are desktop-only to avoid android-activity conflicts
+# On Android, eframe owns the NativeActivity
 # diesel related dependencies
 diesel = { version = "2.3.0", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "chrono"] }
 diesel_migrations = "2.3.0"
@@ -127,6 +125,11 @@ directories = { workspace = true }
 # Desktop-only dependencies (excludes Android and WASM)
 [target.'cfg(not(any(target_os = "android", target_arch = "wasm32")))'.dependencies]
 trash = "5.2"
+# Webview support for desktop platforms (Windows, macOS, Linux, BSD)
+wry = "0.56"
+http = "1"
+raw-window-handle = "0.6"
+egui_webview = { git = "https://github.com/nikescar/egui_webview" }
 
 # Wasm specific dependencies
 [target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
