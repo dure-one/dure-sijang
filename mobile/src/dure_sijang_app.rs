@@ -1408,7 +1408,7 @@ impl DureSijangApp {
         // on android put some top padding to avoid overlapping with system status bar
         #[cfg(target_os = "android")]
         {
-            ui.add_space(24.0);
+            ui.add_space(30.0);
         }
 
         // 1. Left Sidebar Panel (collapsible, resizable)
@@ -1444,7 +1444,81 @@ impl DureSijangApp {
                 });
         }
 
-        // 2. Top Toolbar Panel (navigation controls)
+        // 2. tab header bar with horizontal scrolling
+        ScrollArea::horizontal().show(ui, |ui| {
+            ui.horizontal(|ui| {
+                let mut tab_to_close: Option<usize> = None;
+
+                for (idx, tab) in self.browser_state.tabs.iter().enumerate() {
+                    ui.horizontal(|ui| {
+                        // Tab button with stripped protocol for cleaner display
+                        let display_title = Self::strip_protocol(&tab.title);
+                        let is_active = self.browser_state.active_tab_index == Some(idx);
+
+                        if ui
+                            .selectable_label(is_active, display_title)
+                            .clicked()
+                        {
+                            log::error!("Switching active tab from {:?} to {}",
+                                        self.browser_state.active_tab_index, idx);
+
+                            #[cfg(target_os = "android")]
+                            {
+                                // Tab switching with wry WebView caching:
+                                // - WebViewActivity is destroyed/recreated (Activity lifecycle)
+                                // - wry WebView is cached and reused (AndroidWebViewManager)
+                                // - SplitPlaceholderRule shows split dynamically on tab click
+                                //
+                                // Future optimization: Keep WebViewActivity alive and switch
+                                // between cached WebViews without Activity destroy/recreate
+
+                                // Destroy old WebViewActivity
+                                if let Err(e) = crate::android_activity_embedding::destroy_webview_activity() {
+                                    log::warn!("Failed to destroy old WebView: {}", e);
+                                }
+
+                                // Launch WebViewActivity for clicked tab
+                                // onCreate() will get cached wry WebView from AndroidWebViewManager
+                                let url = self.browser_state.tabs[idx].url_bar.clone();
+                                if let Err(e) = crate::android_activity_embedding::launch_webview_activity(&url, idx as i32) {
+                                    log::error!("Failed to switch to tab {}: {}", idx, e);
+                                } else {
+                                    log::info!("Switched to tab {} (wry WebView cached)", idx);
+                                }
+                            }
+
+                            self.browser_state.active_tab_index = Some(idx);
+                            self.browser_state.url_input = tab.url_bar.clone();
+                        }
+
+                        // Close button
+                        if ui.small_button("×").clicked() {
+                            tab_to_close = Some(idx);
+                        }
+                    });
+                    ui.add_space(2.0); // Add space between tabs
+                }
+
+                // + button to add new tab
+                let can_add_tab = self.browser_state.tabs.len() < MAX_TABS;
+                let add_button = ui.add_enabled(can_add_tab, egui::Button::new("+"));
+                if add_button.clicked() {
+                    self.add_browser_tab(ui.ctx(), frame, "https://dure.app");
+                }
+                if !can_add_tab {
+                    add_button.on_disabled_hover_text("Maximum 20 tabs. Close some tabs to create new ones.");
+                }
+
+                // Close tab after iteration (avoid borrow conflict)
+                if let Some(idx) = tab_to_close {
+                    self.close_browser_tab(idx);
+                }
+            });
+        });
+
+        ui.separator();
+
+        // 3. Top Toolbar Panel (navigation controls)
         TopBottomPanel::top("browser_toolbar").show_inside(ui, |ui| {
             ui.horizontal(|ui| {
                 // Hamburger menu (moved from top app bar)
@@ -1606,7 +1680,7 @@ impl DureSijangApp {
             });
         });
 
-        // TOP Bookmark/history panel for mobile (Android) - moved from sidebar to top toolbar
+        // 4. TOP Bookmark/history panel for mobile (Android) - moved from sidebar to top toolbar
         if !is_desktop && self.browser_state.sidebar_open {
             TopBottomPanel::top("mobile_bookmark_history_panel").show_inside(ui, |ui| {
                 ui.horizontal(|ui| {        
@@ -1628,7 +1702,7 @@ impl DureSijangApp {
             }); // End of TopBottomPanel::top
         } 
 
-        // 3. Central Panel (tabs + browser content)
+        // 5. Central Panel (tabs + browser content)
         CentralPanel::default().show_inside(ui, |ui| {
             if self.browser_state.tabs.is_empty() {
                 // Empty state
@@ -1648,80 +1722,6 @@ impl DureSijangApp {
                     });
                 });
             } else {
-                // Tab bar with horizontal scrolling
-                ScrollArea::horizontal().show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        let mut tab_to_close: Option<usize> = None;
-
-                        for (idx, tab) in self.browser_state.tabs.iter().enumerate() {
-                            ui.horizontal(|ui| {
-                                // Tab button with stripped protocol for cleaner display
-                                let display_title = Self::strip_protocol(&tab.title);
-                                let is_active = self.browser_state.active_tab_index == Some(idx);
-
-                                if ui
-                                    .selectable_label(is_active, display_title)
-                                    .clicked()
-                                {
-                                    log::error!("Switching active tab from {:?} to {}",
-                                               self.browser_state.active_tab_index, idx);
-
-                                    #[cfg(target_os = "android")]
-                                    {
-                                        // Tab switching with wry WebView caching:
-                                        // - WebViewActivity is destroyed/recreated (Activity lifecycle)
-                                        // - wry WebView is cached and reused (AndroidWebViewManager)
-                                        // - SplitPlaceholderRule shows split dynamically on tab click
-                                        //
-                                        // Future optimization: Keep WebViewActivity alive and switch
-                                        // between cached WebViews without Activity destroy/recreate
-
-                                        // Destroy old WebViewActivity
-                                        if let Err(e) = crate::android_activity_embedding::destroy_webview_activity() {
-                                            log::warn!("Failed to destroy old WebView: {}", e);
-                                        }
-
-                                        // Launch WebViewActivity for clicked tab
-                                        // onCreate() will get cached wry WebView from AndroidWebViewManager
-                                        let url = self.browser_state.tabs[idx].url_bar.clone();
-                                        if let Err(e) = crate::android_activity_embedding::launch_webview_activity(&url, idx as i32) {
-                                            log::error!("Failed to switch to tab {}: {}", idx, e);
-                                        } else {
-                                            log::info!("Switched to tab {} (wry WebView cached)", idx);
-                                        }
-                                    }
-
-                                    self.browser_state.active_tab_index = Some(idx);
-                                    self.browser_state.url_input = tab.url_bar.clone();
-                                }
-
-                                // Close button
-                                if ui.small_button("×").clicked() {
-                                    tab_to_close = Some(idx);
-                                }
-                            });
-                            ui.add_space(2.0); // Add space between tabs
-                        }
-
-                        // + button to add new tab
-                        let can_add_tab = self.browser_state.tabs.len() < MAX_TABS;
-                        let add_button = ui.add_enabled(can_add_tab, egui::Button::new("+"));
-                        if add_button.clicked() {
-                            self.add_browser_tab(ui.ctx(), frame, "https://dure.app");
-                        }
-                        if !can_add_tab {
-                            add_button.on_disabled_hover_text("Maximum 20 tabs. Close some tabs to create new ones.");
-                        }
-
-                        // Close tab after iteration (avoid borrow conflict)
-                        if let Some(idx) = tab_to_close {
-                            self.close_browser_tab(idx);
-                        }
-                    });
-                });
-
-                ui.separator();
-
                 // Browser content area - render all webviews, show only active (desktop-only)
                 #[cfg(not(target_os = "android"))]
                 {
