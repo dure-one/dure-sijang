@@ -7,10 +7,10 @@ description: Mycart designated browser - Browse multiple mycart stores with webv
 issue_link: "https://github.com/dure-one/dure-sijang/issues"
 edit_path: "https://github.com/dure-one/dure-sijang/edit/main/:path"
 lang: en
-site_favicon: './resources/favicon.ico'
+site_favicon: './imgs/favicon.ico'
 site_author: Woojae, Park
 repo_url: 'https://github.com/dure-one/dure-sijang'
-site_url: 'https://dure-sijang.pages.dev/'
+site_url: 'https://app-dure-sijang.pages.dev/'
 
 # 404 page redirection rules - for github site repo, ex. {id}.github.io
 404_subsite_urls:
