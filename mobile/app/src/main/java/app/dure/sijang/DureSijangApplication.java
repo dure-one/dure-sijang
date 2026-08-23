@@ -4,7 +4,7 @@ import android.app.Application;
 import android.content.ComponentName;
 import android.util.Log;
 import androidx.core.content.ContextCompat;
-import androidx.window.core.ExtensionsUtil;
+import androidx.window.WindowSdkExtensions;
 import androidx.window.embedding.DividerAttributes;
 import androidx.window.embedding.RuleController;
 import androidx.window.embedding.SplitAttributes;
@@ -63,7 +63,7 @@ public class DureSijangApplication extends Application {
             .setLayoutDirection(SplitAttributes.LayoutDirection.TOP_TO_BOTTOM);
 
         // Check if WindowManager Extensions 6+ is available for draggable divider
-        int extensionsVersion = ExtensionsUtil.getSafeVendorApiLevel();
+        int extensionsVersion = WindowSdkExtensions.getInstance().getExtensionVersion();
         if (extensionsVersion >= 6) {
             Log.i(TAG, "WindowManager Extensions " + extensionsVersion + " - enabling draggable divider");
 
