@@ -3,8 +3,14 @@ package app.dure.sijang;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
-import android.widget.TextView;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.webkit.WebSettings;
 
+/**
+ * WebViewActivity hosts a native Android WebView in Activity Embedding split.
+ * Uses WebView caching via WebViewManager for efficient tab switching.
+ */
 public class WebViewActivity extends AppCompatActivity {
 
     private static final String TAG = "WebViewActivity";
@@ -12,6 +18,7 @@ public class WebViewActivity extends AppCompatActivity {
 
     private String url;
     private int tabId = -1;
+    private WebView webView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,19 +32,30 @@ public class WebViewActivity extends AppCompatActivity {
 
         Log.i(TAG, "onCreate: URL=" + url + ", tabId=" + tabId);
 
-        // Create a placeholder view (wry WebView integration will be done later via JNI)
-        TextView textView = new TextView(this);
-        textView.setText("WebView will load here\nURL: " + url + "\nTab ID: " + tabId);
-        textView.setTextSize(16f);
-        textView.setPadding(32, 32, 32, 32);
+        // Get or create cached WebView from WebViewManager
+        webView = WebViewManager.getInstance().getOrCreateWebView(this, tabId, url);
 
-        setContentView(textView);
+        if (webView.getParent() != null) {
+            Log.w(TAG, "WebView already has a parent, using as-is");
+        }
+
+        setContentView(webView);
+
+        Log.i(TAG, "WebView created/retrieved for tab " + tabId + " (cache size: " +
+              WebViewManager.getInstance().getCacheSize() + ")");
+
         currentInstance = this;
     }
 
     @Override
     protected void onDestroy() {
         Log.i(TAG, "onDestroy: tabId=" + tabId);
+
+        // Detach WebView from this Activity (but keep in cache)
+        if (webView != null && webView.getParent() != null) {
+            ((android.view.ViewGroup) webView.getParent()).removeView(webView);
+        }
+
         if (currentInstance == this) {
             currentInstance = null;
         }
@@ -47,6 +65,8 @@ public class WebViewActivity extends AppCompatActivity {
     public void loadUrl(String newUrl) {
         Log.i(TAG, "loadUrl: " + newUrl + " for tabId=" + tabId);
         url = newUrl;
-        // TODO: Implement wry WebView navigation when integrated
+        if (webView != null) {
+            webView.loadUrl(newUrl);
+        }
     }
 }
