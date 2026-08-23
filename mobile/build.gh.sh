@@ -39,6 +39,11 @@ cargo ndk -t arm64-v8a -o app/src/main/jniLibs/ build --release --lib
 cargo ndk -t x86 -o app/src/main/jniLibs/ build --release --lib
 cargo ndk -t x86_64 -o app/src/main/jniLibs/ build --release --lib
 
+# Clean build cache to ensure Java sources are recompiled
+echo "Cleaning Gradle build cache..."
+rm -rf app/build app/.cxx .gradle build
+gradle clean
+
 # Build APK
 gradle assembleRelease
 
