@@ -69,11 +69,7 @@ public class DureSijangApplication extends Application {
 
             // Add draggable divider attributes
             splitAttributesBuilder.setDividerAttributes(
-                new DividerAttributes.DraggableDividerAttributes.Builder()
-                    .setColor(ContextCompat.getColor(instance, R.color.divider_color))
-                    .setWidthDp(4)
-                    .setDragRange(DividerAttributes.DragRange.DRAG_RANGE_SYSTEM_DEFAULT)
-                    .build()
+                createDividerAttributes(extensionsVersion)
             );
         } else {
             Log.i(TAG, "WindowManager Extensions " + extensionsVersion + " - draggable divider requires version 6+ (Android 15+)");
@@ -104,5 +100,17 @@ public class DureSijangApplication extends Application {
 
         rules.add(splitPairRule);
         return rules;
+    }
+
+    private static DividerAttributes.DraggableDividerAttributes createDividerAttributes(
+            int extensionsVersion) {
+        DividerAttributes.DraggableDividerAttributes.Builder dividerBuilder =
+            new DividerAttributes.DraggableDividerAttributes.Builder()
+                .setColor(ContextCompat.getColor(instance, R.color.divider_color))
+                .setWidthDp(4)
+                .setDragRange(
+                    new DividerAttributes.DragRange.SplitRatioDragRange(0.1f, 0.99f));
+
+        return dividerBuilder.build();
     }
 }

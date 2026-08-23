@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <split-config xmlns:window="http://schemas.android.com/apk/res-auto">
     <!--
-        Dynamic split layout: 30% NativeActivity (egui controls) top,
-        70% WebViewActivity (WebView) bottom.
+        Dynamic split layout: 10% NativeActivity (egui controls) top,
+        90% WebViewActivity (WebView) bottom.
 
         Forces split on all devices including phones in portrait mode.
         splitMaxAspectRatioInPortrait="ALWAYS_ALLOW" enables split on narrow screens.
     -->
     <SplitPairRule
-        window:splitRatio="0.3"
+        window:splitRatio="0.1"
         window:splitLayoutDirection="topToBottom"
         window:finishPrimaryWithSecondary="never"
         window:finishSecondaryWithPrimary="always"
