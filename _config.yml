@@ -45,7 +45,6 @@ include:
   - index.md
   - imgs
   - README.md
-  - google1fadff23415819bc.html
   - docs
   - CREDITS.md
   - CODE_OF_CONDUCT.md
@@ -55,7 +54,7 @@ include:
   - kr
 
 # Theme settings
-theme_upstream: 'https://github.com/dure-one/mdx-sitegen-solidbase'
+theme_upstream: 'https://github.com/nikescar/mdx-sitegen-solidbase'
 theme_config:
   social_links:
     gitHub: 'https://github.com/dure-one/dure-sijang'
