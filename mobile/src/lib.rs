@@ -339,7 +339,7 @@ pub fn is_mobile(ctx: &egui::Context) -> bool {
 }
 
 /// Minimum viewport width for desktop table view
-pub const DESKTOP_MIN_WIDTH: f32 = 1008.0;
+pub const DESKTOP_MIN_WIDTH: f32 = 1441.0;
 
 /// Base table width for calculating column ratios
 pub const BASE_TABLE_WIDTH: f32 = 1024.0;

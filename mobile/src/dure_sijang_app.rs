@@ -433,7 +433,7 @@ impl DureSijangApp {
 
     pub fn ui_internal(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let available_width = ui.ctx().content_rect().width();
-        let is_desktop = available_width >= crate::DESKTOP_MIN_WIDTH;
+        let is_desktop = available_width > crate::DESKTOP_MIN_WIDTH;
         log::error!("ui_internal called, available_width={}, is_desktop={}", available_width, is_desktop);
 
         // Apply theme at the start of UI rendering
@@ -462,7 +462,7 @@ impl DureSijangApp {
 
         // === main content area start
         let available_width = ui.available_width();
-        let is_desktop = available_width >= crate::DESKTOP_MIN_WIDTH;
+        let is_desktop = available_width > crate::DESKTOP_MIN_WIDTH;
 
         if is_desktop {
             self.render_desktop_tabs(ui, frame);
@@ -1395,6 +1395,8 @@ impl DureSijangApp {
     pub fn render_browser_ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         use egui::{CentralPanel, SidePanel, TopBottomPanel, ScrollArea, TextEdit};
 
+        let is_desktop = ui.available_width() > crate::DESKTOP_MIN_WIDTH;
+
         if let Some(idx) = self.browser_state.active_tab_index {
             log::error!("render_browser_ui: {} tabs, active_tab_index=Some({})",
                        self.browser_state.tabs.len(), idx);
@@ -1403,8 +1405,14 @@ impl DureSijangApp {
                        self.browser_state.tabs.len());
         }
 
+        // on android put some top padding to avoid overlapping with system status bar
+        #[cfg(target_os = "android")]
+        {
+            ui.add_space(24.0);
+        }
+
         // 1. Left Sidebar Panel (collapsible, resizable)
-        if self.browser_state.sidebar_open {
+        if is_desktop && self.browser_state.sidebar_open {
             SidePanel::left("browser_sidebar")
                 .resizable(true)
                 .default_width(200.0)
@@ -1504,6 +1512,21 @@ impl DureSijangApp {
                         .desired_width(ui.available_width() - 120.0),
                 );
 
+                #[cfg(target_os = "android")]
+                {
+                    if response.gained_focus() {
+                        let _ = crate::android_inputmethod::show_soft_input();
+                    }
+                    if response.lost_focus() {
+                        let _ = crate::android_inputmethod::hide_soft_input();
+                    }
+                }
+                crate::clipboard_popup::show_clipboard_popup(
+                    ui,
+                    &response,
+                    &mut self.browser_state.url_input,
+                );
+
                 if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                     if let Some(idx) = self.browser_state.active_tab_index {
                         let url = Self::ensure_protocol(&self.browser_state.url_input);
@@ -1582,6 +1605,28 @@ impl DureSijangApp {
                 }
             });
         });
+
+        // TOP Bookmark/history panel for mobile (Android) - moved from sidebar to top toolbar
+        if !is_desktop && self.browser_state.sidebar_open {
+            TopBottomPanel::top("mobile_bookmark_history_panel").show_inside(ui, |ui| {
+                ui.horizontal(|ui| {        
+                    if ui.selectable_label(
+                        self.browser_state.sidebar_tab == SidebarTab::Bookmarks,
+                        "📚 Bookmarks"
+                    ).clicked() {
+                        self.browser_state.sidebar_tab = SidebarTab::Bookmarks;
+                    }
+
+                    if ui.selectable_label(
+                        self.browser_state.sidebar_tab == SidebarTab::History,
+                        "🕒 History"
+                    ).clicked() {
+                        self.browser_state.sidebar_tab = SidebarTab::History;
+                    }
+                });
+                ui.separator();
+            }); // End of TopBottomPanel::top
+        } 
 
         // 3. Central Panel (tabs + browser content)
         CentralPanel::default().show_inside(ui, |ui| {
