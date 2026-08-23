@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <application
+        android:name="app.dure.sijang.DureSijangApplication"
         android:allowBackup="true"
         android:icon="@mipmap/dure_sijang"
         android:label="Dure-Sijang"
@@ -25,6 +26,7 @@
         <activity
             android:name="android.app.NativeActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:resizeableActivity="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -34,15 +36,23 @@
             <meta-data android:name="android.app.lib_name" android:value="dure_sijang" />
         </activity>
 
-        <!-- WebView Activity for proper AppCompatActivity lifecycle -->
+        <!-- WebView Activity for Activity Embedding split-screen -->
         <activity
             android:name="app.dure.sijang.WebViewActivity"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:resizeableActivity="true"
             android:exported="false"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
-            android:hardwareAccelerated="true">
-            <!-- Not exported: only launched from within app -->
-        </activity>
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+
+        <!-- Enable Activity Embedding for split-screen support -->
+        <property
+            android:name="android.window.PROPERTY_ACTIVITY_EMBEDDING_SPLITS_ENABLED"
+            android:value="true" />
+
+        <!-- Activity Embedding split configuration -->
+        <meta-data
+            android:name="androidx.window.embedding.splits"
+            android:resource="@xml/main_split_config" />
     </application>
 
 </manifest>

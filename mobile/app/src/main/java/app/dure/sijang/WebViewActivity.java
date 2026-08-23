@@ -1,80 +1,72 @@
 package app.dure.sijang;
 
 import android.os.Bundle;
+import androidx.appcompat.app.AppCompatActivity;
+import android.util.Log;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebSettings;
-import androidx.appcompat.app.AppCompatActivity;
-import android.util.Log;
 
+/**
+ * WebViewActivity hosts a native Android WebView in Activity Embedding split.
+ * Uses WebView caching via WebViewManager for efficient tab switching.
+ */
 public class WebViewActivity extends AppCompatActivity {
+
     private static final String TAG = "WebViewActivity";
+    public static WebViewActivity currentInstance = null;
+
+    private String url;
+    private int tabId = -1;
     private WebView webView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Log.d(TAG, "onCreate: Initializing WebView");
+        url = getIntent().getStringExtra("url");
+        if (url == null) {
+            url = "https://dure.app";
+        }
+        tabId = getIntent().getIntExtra("tab_id", -1);
 
-        // Create WebView programmatically
-        webView = new WebView(this);
+        Log.i(TAG, "onCreate: URL=" + url + ", tabId=" + tabId);
+
+        // Get or create cached WebView from WebViewManager
+        webView = WebViewManager.getInstance().getOrCreateWebView(this, tabId, url);
+
+        if (webView.getParent() != null) {
+            Log.w(TAG, "WebView already has a parent, using as-is");
+        }
+
         setContentView(webView);
 
-        // Configure WebView settings
-        WebSettings settings = webView.getSettings();
+        Log.i(TAG, "WebView created/retrieved for tab " + tabId + " (cache size: " +
+              WebViewManager.getInstance().getCacheSize() + ")");
 
-        // Get optional settings from Intent (default: true)
-        boolean enableJs = getIntent().getBooleanExtra("enable_js", true);
-        boolean enableDomStorage = getIntent().getBooleanExtra("enable_dom_storage", true);
-
-        settings.setJavaScriptEnabled(enableJs);
-        settings.setDomStorageEnabled(enableDomStorage);
-        settings.setDatabaseEnabled(true);
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-
-        // Enable mixed content (HTTPS pages with HTTP resources)
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-
-        // Set WebViewClient to handle navigation within WebView
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                Log.d(TAG, "Page loaded: " + url);
-            }
-        });
-
-        // Load URL from Intent
-        String url = getIntent().getStringExtra("url");
-        if (url != null && !url.isEmpty()) {
-            Log.d(TAG, "Loading URL: " + url);
-            webView.loadUrl(url);
-        } else {
-            Log.e(TAG, "No URL provided in Intent");
-            finish();
-        }
-    }
-
-    @Override
-    public void onBackPressed() {
-        // If WebView can navigate back, do that instead of finishing Activity
-        if (webView != null && webView.canGoBack()) {
-            Log.d(TAG, "Navigating WebView back");
-            webView.goBack();
-        } else {
-            Log.d(TAG, "Finishing WebViewActivity");
-            super.onBackPressed();
-        }
+        currentInstance = this;
     }
 
     @Override
     protected void onDestroy() {
-        Log.d(TAG, "onDestroy: Cleaning up WebView");
-        if (webView != null) {
-            webView.destroy();
-            webView = null;
+        Log.i(TAG, "onDestroy: tabId=" + tabId);
+
+        // Detach WebView from this Activity (but keep in cache)
+        if (webView != null && webView.getParent() != null) {
+            ((android.view.ViewGroup) webView.getParent()).removeView(webView);
+        }
+
+        if (currentInstance == this) {
+            currentInstance = null;
         }
         super.onDestroy();
+    }
+
+    public void loadUrl(String newUrl) {
+        Log.i(TAG, "loadUrl: " + newUrl + " for tabId=" + tabId);
+        url = newUrl;
+        if (webView != null) {
+            webView.loadUrl(newUrl);
+        }
     }
 }

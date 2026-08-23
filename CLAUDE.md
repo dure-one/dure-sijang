@@ -370,6 +370,32 @@ Edit `mobile/assets/languages/fluent/{en-US,ko-KR}.ftl` using Fluent syntax.
 - `http = "1"`: HTTP types for wry integration
 - `gtk = "0.18"` (OpenBSD): GTK backend for webview
 
+### Android Browser with Activity Embedding (August 2026)
+
+**Completed**:
+- ✅ Activity Embedding split-screen implementation (30% egui controls, 70% wry WebView)
+- ✅ JNI bridge for Rust ↔ Java communication (WryWebViewBridge)
+- ✅ Tab creation functionality (+ button works on Android)
+- ✅ URL navigation (Enter key and Go button)
+- ✅ Auto-create 2 tabs to https://dure.app on program launch
+- ✅ Tab switching with WebView lifecycle management (destroy/recreate pattern)
+- ✅ Tab closing with automatic focus management
+- ✅ Maximum 20 tabs limit with UI feedback
+
+**Architecture**:
+- `android_activity_embedding.rs`: JNI wrapper functions (launch, destroy, navigate)
+- `app/src/main/java/app/dure/sijang/WryWebViewBridge.java`: Java JNI bridge
+- `app/src/main/java/app/dure/sijang/WebViewActivity.java`: WebView container activity
+- `app/src/main/res/xml/main_split_config.xml`: Activity Embedding configuration
+- `dure_sijang_app.rs`: Browser UI integration with platform-specific WebView calls
+
+**Requirements**:
+- Minimum Android SDK: API 31 (Android 12L)
+- Dependency: `androidx.window:window:1.2.0`
+- Pattern: Single active WebView (destroy old, create new on tab switch)
+
+**Documentation**: See `mobile/docs/ANDROID_BROWSER.md` for complete architecture, user flows, error handling, and troubleshooting
+
 ## 9. API Keys and Configuration
 
 User settings stored in:

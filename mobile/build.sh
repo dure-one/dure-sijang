@@ -213,6 +213,11 @@ if [[ ! -f "./app/keystore.properties" && ! -f "./app/release.keystore" && -n ${
     echo "${STORE_PASSWORD}" | keytool -list -v -keystore ./app/release.keystore
 fi
 
+# Clean build cache to ensure Java sources are recompiled
+echo "Cleaning Gradle build cache..."
+rm -rf app/build app/.cxx .gradle build
+gradle clean
+
 # generate keystore.properties file
 ANDROID_SPLIT_BUILD=1 gradle build
 # ANDROID_SPLIT_BUILD=1 gradle bundleDebug

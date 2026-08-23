@@ -19,6 +19,9 @@ pub use crate::dure_sijang_app_stt::*;
 use crate::{Config, Settings};
 use crate::browser_stt::SidebarTab;
 
+// Maximum number of tabs to prevent memory issues
+const MAX_TABS: usize = 20;
+
 use crate::install;
 #[cfg(not(target_os = "android"))]
 use crate::install_stt::InstallStatus;
@@ -159,10 +162,10 @@ impl Default for DureSijangApp {
         //
 
         // Log basic system info at app start
-        log::info!("=== System Information ===");
-        log::info!("OS: {}", std::env::consts::OS);
-        log::info!("Architecture: {}", std::env::consts::ARCH);
-        log::info!("Family: {}", std::env::consts::FAMILY);
+        log::error!("=== System Information ===");
+        log::error!("OS: {}", std::env::consts::OS);
+        log::error!("Architecture: {}", std::env::consts::ARCH);
+        log::error!("Family: {}", std::env::consts::FAMILY);
 
         let config = Config::new().ok();
         if let Some(ref cfg) = config {
@@ -250,6 +253,10 @@ impl Default for DureSijangApp {
             #[cfg(not(target_os = "android"))]
             webview_widgets: HashMap::new(),
 
+            // Android WebView manager
+            #[cfg(target_os = "android")]
+            android_webview_manager: crate::android_webview::AndroidWebViewManager::new(),
+
             // Browser state (MVVM)
             browser_state: crate::browser_stt::BrowserState::load_from_db(),
         };
@@ -276,6 +283,9 @@ impl DureSijangApp {
     /// This captures the window handle for webview creation.
     pub fn new(cc: &eframe::CreationContext) -> Self {
         let mut app = Self::default();
+
+        // Initialize browser with default tabs
+        app.initialize_browser();
 
         // Capture window handle for webview parent (NEW - Task 5)
 
@@ -424,6 +434,8 @@ impl DureSijangApp {
     pub fn ui_internal(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let available_width = ui.ctx().content_rect().width();
         let is_desktop = available_width >= crate::DESKTOP_MIN_WIDTH;
+        log::error!("ui_internal called, available_width={}, is_desktop={}", available_width, is_desktop);
+
         // Apply theme at the start of UI rendering
         apply_theme(ui.ctx(), Some(Self::detect_os_theme));
 
@@ -776,7 +788,7 @@ impl DureSijangApp {
                     log::error!("Failed to open browser for update download: {}", e);
                     self.update_status = format!("Failed to open browser: {}", e);
                 } else {
-                    log::info!("Opened browser for update download");
+                    log::error!("Opened browser for update download");
                     self.dlg_update.close();
                 }
             }
@@ -789,6 +801,7 @@ impl DureSijangApp {
     }
 
     fn render_desktop_tabs(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        log::error!("render_desktop_tabs called");
         // Browser UI replaces legacy Dure-Sijang tabs
         self.render_browser_ui(ui, frame);
     }
@@ -874,14 +887,14 @@ impl DureSijangApp {
         });
 
         // Update log level in real-time
-        log::info!("Updating log level to: {}", self.settings.log_level);
+        log::error!("Updating log level to: {}", self.settings.log_level);
         crate::log_capture::update_log_level(&self.settings.log_level);
 
         // Save to file
         if let Some(ref config) = self.config {
             match config.save_settings(&self.settings) {
                 Ok(_) => {
-                    log::info!("Settings saved successfully");
+                    log::error!("Settings saved successfully");
                 }
                 Err(e) => {
                     log::error!("Failed to save settings: {}", e);
@@ -904,6 +917,8 @@ impl View for DureSijangApp {
 
 impl eframe::App for DureSijangApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        log::error!("UPDATE CALLED, first_update_done={}", self.first_update_done);
+
         // Process GTK events for webview (Linux/OpenBSD)
         #[cfg(any(
             target_os = "linux",
@@ -923,18 +938,25 @@ impl eframe::App for DureSijangApp {
 
         // On first update - initialize webview and perform startup tasks
         if !self.first_update_done {
+            if let Some(idx) = self.browser_state.active_tab_index {
+                log::error!("First update - tabs: {}, active_tab_index is SOME: {}",
+                          self.browser_state.tabs.len(), idx);
+            } else {
+                log::error!("First update - tabs: {}, active_tab_index is NONE",
+                          self.browser_state.tabs.len());
+            }
             self.first_update_done = true;
 
             // Initialize egui_webview for browser functionality (desktop-only)
             #[cfg(not(target_os = "android"))]
             {
                 egui_webview::init_webview(ctx);
-                log::info!("Initialized egui_webview for browser");
+                log::error!("Initialized egui_webview for browser");
 
                 // Create default tab if no tabs exist (first run)
                 if self.browser_state.tabs.is_empty() {
                     self.add_browser_tab(ctx, frame, "https://dure.app");
-                    log::info!("Created default browser tab");
+                    log::error!("Created default browser tab");
                 } else {
                     // Tabs were loaded from database - create webview widgets for them
                     // (tab metadata exists but webview_widgets HashMap is empty)
@@ -946,12 +968,32 @@ impl eframe::App for DureSijangApp {
                                 builder.with_url(&tab.url_bar)
                             });
                             self.webview_widgets.insert(tab.id, view);
-                            log::info!("Created webview for loaded tab {:?} with URL: {}", tab.id, tab.url_bar);
+                            log::error!("Created webview for loaded tab {:?} with URL: {}", tab.id, tab.url_bar);
                         }
                     }
-                    log::info!("Initialized {} webviews for {} loaded tabs",
+                    log::error!("Initialized {} webviews for {} loaded tabs",
                                self.webview_widgets.len(),
                                self.browser_state.tabs.len());
+                }
+            }
+
+            // Launch initial WebView for active tab (Android only)
+            #[cfg(target_os = "android")]
+            {
+                if let Some(active_idx) = self.browser_state.active_tab_index {
+                    if active_idx < self.browser_state.tabs.len() {
+                        let url = self.browser_state.tabs[active_idx].url_bar.clone();
+                        log::error!("First update - launching initial WebView for tab {} at {}", active_idx, url);
+
+                        if let Err(e) = crate::android_activity_embedding::launch_webview_activity(
+                            &url,
+                            active_idx as i32,
+                        ) {
+                            log::error!("Failed to launch initial WebView: {}", e);
+                        } else {
+                            log::error!("Successfully launched initial WebView");
+                        }
+                    }
                 }
             }
 
@@ -1057,6 +1099,28 @@ impl DureSijangApp {
     // ===== Browser UI Methods (MVVM Browser Integration) =====
 
     /// Add a new browser tab (desktop-only)
+    /// Initialize browser with default tabs on first launch
+    fn initialize_browser(&mut self) {
+        // If no tabs exist (first launch), create 2 default tabs
+        if self.browser_state.tabs.is_empty() {
+            log::error!("First launch - creating 2 default tabs");
+
+            // Create 2 tabs to dure.app (metadata only, no WebView yet)
+            self.browser_state.add_tab("https://dure.app", "dure.app");
+            self.browser_state.add_tab("https://dure.app", "dure.app");
+
+            // Set first tab as active
+            self.browser_state.active_tab_index = Some(0);
+            self.browser_state.url_input = "https://dure.app".to_string();
+
+            log::error!(
+                "Created {} tabs, active tab: {:?}",
+                self.browser_state.tabs.len(),
+                self.browser_state.active_tab_index
+            );
+        }
+    }
+
     ///
     /// # Arguments
     /// * `ctx` - egui context
@@ -1064,6 +1128,12 @@ impl DureSijangApp {
     /// * `url` - Initial URL to load
     #[cfg(not(target_os = "android"))]
     pub fn add_browser_tab(&mut self, ctx: &egui::Context, frame: &eframe::Frame, url: &str) {
+        // Check tab limit
+        if self.browser_state.tabs.len() >= MAX_TABS {
+            log::warn!("Cannot create tab: maximum {} tabs reached", MAX_TABS);
+            return;
+        }
+
         // Create tab metadata
         let tab_id = self.browser_state.add_tab(url, url);
 
@@ -1075,7 +1145,38 @@ impl DureSijangApp {
 
         // Store webview in HashMap
         self.webview_widgets.insert(tab_id, view);
-        log::info!("Added browser tab {:?} with URL: {}", tab_id, url);
+        log::error!("Added browser tab {:?} with URL: {}", tab_id, url);
+    }
+
+    /// Add a new browser tab (Android - uses Activity Embedding)
+    ///
+    /// # Arguments
+    /// * `ctx` - egui context
+    /// * `frame` - eframe frame
+    /// * `url` - Initial URL to load
+    #[cfg(target_os = "android")]
+    pub fn add_browser_tab(&mut self, ctx: &egui::Context, frame: &eframe::Frame, url: &str) {
+        // Check tab limit
+        if self.browser_state.tabs.len() >= MAX_TABS {
+            log::warn!("Cannot create tab: maximum {} tabs reached", MAX_TABS);
+            return;
+        }
+
+        // Create tab metadata
+        let tab_id = self.browser_state.add_tab(url, url);
+
+        // Android: Launch WebViewActivity via JNI
+        let tab_index = self.browser_state.tabs.len() - 1;
+        if let Err(e) = crate::android_activity_embedding::launch_webview_activity(
+            url,
+            tab_index as i32,
+        ) {
+            log::error!("Failed to launch WebViewActivity for tab {}: {}", tab_index, e);
+            // Remove tab metadata on failure
+            self.browser_state.close_tab(tab_index);
+        } else {
+            log::error!("Launched WebViewActivity for new tab {}", tab_index);
+        }
     }
 
     /// Close a browser tab by index
@@ -1084,22 +1185,62 @@ impl DureSijangApp {
     /// * `idx` - Tab index to close
     pub fn close_browser_tab(&mut self, idx: usize) {
         if idx >= self.browser_state.tabs.len() {
+            log::warn!("Attempted to close invalid tab index {}", idx);
             return;
         }
+
+        log::error!("Closing tab {} (active: {:?})", idx, self.browser_state.active_tab_index);
+
+        let tab_id = self.browser_state.tabs[idx].id;
 
         // Remove webview widget before removing tab metadata (desktop-only)
         #[cfg(not(target_os = "android"))]
         {
-            let tab_id = self.browser_state.tabs[idx].id;
             if let Some(_view) = self.webview_widgets.remove(&tab_id) {
-                log::info!("Destroyed webview for tab {:?}", tab_id);
+                log::error!("Destroyed webview for tab {:?}", tab_id);
                 // Drop will handle cleanup
+            }
+        }
+
+        // If closing active tab on Android, destroy WebViewActivity first
+        #[cfg(target_os = "android")]
+        if self.browser_state.active_tab_index == Some(idx) {
+            if let Err(e) = crate::android_activity_embedding::destroy_webview_activity() {
+                log::warn!("Failed to destroy WebView when closing tab: {}", e);
             }
         }
 
         // Remove tab metadata
         self.browser_state.close_tab(idx);
-        log::info!("Closed browser tab at index {}", idx);
+
+        // Calculate new active tab if we closed the active one
+        if self.browser_state.active_tab_index == Some(idx) {
+            let new_active = if idx > 0 {
+                Some(idx - 1)
+            } else if !self.browser_state.tabs.is_empty() {
+                Some(0)
+            } else {
+                None
+            };
+
+            log::error!("New active tab after close: {:?}", new_active);
+
+            // Launch WebView for new active tab on Android
+            #[cfg(target_os = "android")]
+            if let Some(new_idx) = new_active {
+                let url = self.browser_state.tabs[new_idx].url_bar.clone();
+                if let Err(e) = crate::android_activity_embedding::launch_webview_activity(&url, new_idx as i32) {
+                    log::error!("Failed to launch WebView for new active tab: {}", e);
+                }
+            }
+
+            self.browser_state.active_tab_index = new_active;
+            if let Some(idx) = new_active {
+                self.browser_state.url_input = self.browser_state.tabs[idx].url_bar.clone();
+            }
+        }
+
+        log::error!("Closed browser tab at index {}", idx);
     }
 
     // ===== Browser Helper Functions =====
@@ -1193,7 +1334,7 @@ impl DureSijangApp {
                 app.browser_state.tabs[last_idx].title = title;
             }
 
-            log::info!("Opened bookmark in new tab: {}", url);
+            log::error!("Opened bookmark in new tab: {}", url);
         }
         if let Some(idx) = bookmark_to_delete {
             let _ = app.browser_state.delete_bookmark(idx);
@@ -1229,7 +1370,7 @@ impl DureSijangApp {
                 #[cfg(not(target_os = "android"))]
                 {
                     app.add_browser_tab(ui.ctx(), frame, &url);
-                    log::info!("Opened history in new tab: {}", url);
+                    log::error!("Opened history in new tab: {}", url);
                 }
             } else {
                 // Navigate current tab (same tab)
@@ -1240,7 +1381,7 @@ impl DureSijangApp {
                         let tab_id = app.browser_state.tabs[idx].id;
                         if let Some(view) = app.webview_widgets.get(&tab_id) {
                             let _ = view.view.load_url(&url);
-                            log::info!("Navigated to history URL: {}", url);
+                            log::error!("Navigated to history URL: {}", url);
                         }
                     }
                 }
@@ -1253,6 +1394,14 @@ impl DureSijangApp {
     /// Shows sidebar, toolbar, tabs, and webview content
     pub fn render_browser_ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         use egui::{CentralPanel, SidePanel, TopBottomPanel, ScrollArea, TextEdit};
+
+        if let Some(idx) = self.browser_state.active_tab_index {
+            log::error!("render_browser_ui: {} tabs, active_tab_index=Some({})",
+                       self.browser_state.tabs.len(), idx);
+        } else {
+            log::error!("render_browser_ui: {} tabs, active_tab_index=None",
+                       self.browser_state.tabs.len());
+        }
 
         // 1. Left Sidebar Panel (collapsible, resizable)
         if self.browser_state.sidebar_open {
@@ -1362,15 +1511,28 @@ impl DureSijangApp {
                         self.browser_state.update_tab_url(idx, &url, None);
                         // Update URL input to show full URL
                         self.browser_state.url_input = url.clone();
+
+                        let tab_id = self.browser_state.tabs[idx].id;
+
                         // Navigate webview widget (desktop-only)
                         #[cfg(not(target_os = "android"))]
                         {
-                            let tab_id = self.browser_state.tabs[idx].id;
                             if let Some(view) = self.webview_widgets.get(&tab_id) {
                                 let _ = view.view.load_url(&url);
-                                log::info!("Navigated tab {} to {}", idx, url);
+                                log::error!("Navigated tab {} to {}", idx, url);
                             }
                         }
+
+                        // Navigate Android WebView via Activity Embedding
+                        #[cfg(target_os = "android")]
+                        {
+                            if let Err(e) = crate::android_activity_embedding::navigate_webview(&url) {
+                                log::error!("Failed to navigate WebView to {}: {}", url, e);
+                            } else {
+                                log::error!("WebView navigation successful to {}", url);
+                            }
+                        }
+
                         self.browser_state.refresh_history();
                     }
                 }
@@ -1383,15 +1545,28 @@ impl DureSijangApp {
                         self.browser_state.update_tab_url(idx, &url, None);
                         // Update URL input to show full URL
                         self.browser_state.url_input = url.clone();
+
+                        let tab_id = self.browser_state.tabs[idx].id;
+
                         // Navigate webview widget (desktop-only)
                         #[cfg(not(target_os = "android"))]
                         {
-                            let tab_id = self.browser_state.tabs[idx].id;
                             if let Some(view) = self.webview_widgets.get(&tab_id) {
                                 let _ = view.view.load_url(&url);
-                                log::info!("Navigated tab {} to {}", idx, url);
+                                log::error!("Navigated tab {} to {}", idx, url);
                             }
                         }
+
+                        // Navigate Android WebView via Activity Embedding
+                        #[cfg(target_os = "android")]
+                        {
+                            if let Err(e) = crate::android_activity_embedding::navigate_webview(&url) {
+                                log::error!("Failed to navigate WebView to {}: {}", url, e);
+                            } else {
+                                log::error!("WebView navigation successful to {}", url);
+                            }
+                        }
+
                         self.browser_state.refresh_history();
                     }
                 }
@@ -1417,9 +1592,13 @@ impl DureSijangApp {
                         ui.heading("No tabs open");
                         ui.label("Click '+' to create a new tab.");
                         ui.add_space(20.0);
-                        #[cfg(not(target_os = "android"))]
-                        if ui.button("+ New Tab").clicked() {
+                        let can_add_tab = self.browser_state.tabs.len() < MAX_TABS;
+                        let add_button = ui.add_enabled(can_add_tab, egui::Button::new("+ New Tab"));
+                        if add_button.clicked() {
                             self.add_browser_tab(ui.ctx(), frame, "https://dure.app");
+                        }
+                        if !can_add_tab {
+                            add_button.on_disabled_hover_text("Maximum 20 tabs. Close some tabs to create new ones.");
                         }
                     });
                 });
@@ -1439,8 +1618,34 @@ impl DureSijangApp {
                                     .selectable_label(is_active, display_title)
                                     .clicked()
                                 {
-                                    log::info!("Switching active tab from {:?} to {}",
+                                    log::error!("Switching active tab from {:?} to {}",
                                                self.browser_state.active_tab_index, idx);
+
+                                    #[cfg(target_os = "android")]
+                                    {
+                                        // Tab switching with wry WebView caching:
+                                        // - WebViewActivity is destroyed/recreated (Activity lifecycle)
+                                        // - wry WebView is cached and reused (AndroidWebViewManager)
+                                        // - SplitPlaceholderRule shows split dynamically on tab click
+                                        //
+                                        // Future optimization: Keep WebViewActivity alive and switch
+                                        // between cached WebViews without Activity destroy/recreate
+
+                                        // Destroy old WebViewActivity
+                                        if let Err(e) = crate::android_activity_embedding::destroy_webview_activity() {
+                                            log::warn!("Failed to destroy old WebView: {}", e);
+                                        }
+
+                                        // Launch WebViewActivity for clicked tab
+                                        // onCreate() will get cached wry WebView from AndroidWebViewManager
+                                        let url = self.browser_state.tabs[idx].url_bar.clone();
+                                        if let Err(e) = crate::android_activity_embedding::launch_webview_activity(&url, idx as i32) {
+                                            log::error!("Failed to switch to tab {}: {}", idx, e);
+                                        } else {
+                                            log::info!("Switched to tab {} (wry WebView cached)", idx);
+                                        }
+                                    }
+
                                     self.browser_state.active_tab_index = Some(idx);
                                     self.browser_state.url_input = tab.url_bar.clone();
                                 }
@@ -1453,10 +1658,14 @@ impl DureSijangApp {
                             ui.add_space(2.0); // Add space between tabs
                         }
 
-                        // + button to add new tab (desktop-only)
-                        #[cfg(not(target_os = "android"))]
-                        if ui.button("+").clicked() {
+                        // + button to add new tab
+                        let can_add_tab = self.browser_state.tabs.len() < MAX_TABS;
+                        let add_button = ui.add_enabled(can_add_tab, egui::Button::new("+"));
+                        if add_button.clicked() {
                             self.add_browser_tab(ui.ctx(), frame, "https://dure.app");
+                        }
+                        if !can_add_tab {
+                            add_button.on_disabled_hover_text("Maximum 20 tabs. Close some tabs to create new ones.");
                         }
 
                         // Close tab after iteration (avoid borrow conflict)
@@ -1511,7 +1720,7 @@ impl DureSijangApp {
                     // Apply URL updates after iteration (tab title will show URL)
                     for (idx, new_url) in url_updates {
                         self.browser_state.update_tab_url(idx, &new_url, Some(&new_url));
-                        log::info!("Tab {} navigated to {}", idx, new_url);
+                        log::error!("Tab {} navigated to {}", idx, new_url);
                     }
                 }
             }

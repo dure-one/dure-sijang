@@ -167,6 +167,10 @@ pub struct DureSijangApp {
     #[cfg(not(target_os = "android"))]
     pub webview_widgets: std::collections::HashMap<egui::Id, egui_webview::EguiWebView>,
 
+    // Android WebView manager using wry
+    #[cfg(target_os = "android")]
+    pub android_webview_manager: crate::android_webview::AndroidWebViewManager,
+
     // Browser state (MVVM)
     pub browser_state: crate::browser_stt::BrowserState,
 }
