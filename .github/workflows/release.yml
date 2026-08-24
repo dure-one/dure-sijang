@@ -59,12 +59,12 @@ jobs:
             build-args: "--release"
             platform_type: linux
 
-          # FreeBSD (disabled)
-          # - name: FreeBSD x86_64
-          #   target: x86_64-unknown-freebsd
-          #   build-args: "--release"
-          #   freebsd_version: "14.2"
-          #   platform_type: freebsd
+          # FreeBSD
+          - name: FreeBSD x86_64
+            target: x86_64-unknown-freebsd
+            build-args: "--release"
+            freebsd_version: "14.2"
+            platform_type: freebsd
 
           - name: Android aarch64
             target: aarch64-linux-android
@@ -220,7 +220,7 @@ jobs:
           release: ${{ matrix.platform.freebsd_version }}
           usesh: true
           prepare: |
-            pkg install -y curl pkgconf gtk3 cairo pango gdk-pixbuf2 at-spi2-core pixman wayland bzip2
+            pkg install -y curl pkgconf gtk3 cairo pango gdk-pixbuf2 at-spi2-core pixman wayland bzip2 webkit2-gtk3 libsoup3
             ln -sf /usr/local/bin/pkgconf /usr/local/bin/pkg-config || true
             export PKG_CONFIG_PATH=/usr/local/libdata/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig
             mkdir -p /usr/local/libdata/pkgconfig
@@ -404,7 +404,7 @@ jobs:
             ./artifacts/dure-sijang-armv7-unknown-linux-musleabihf/dure-sijang \
             ./artifacts/dure-sijang-x86_64-apple-darwin/dure-sijang \
             ./artifacts/dure-sijang-x86_64-unknown-linux-musl/dure-sijang \
-            # ./artifacts/dure-sijang-x86_64-unknown-freebsd/dure-sijang \
+            ./artifacts/dure-sijang-x86_64-unknown-freebsd/dure-sijang \
             ./artifacts/dure-sijang-x86_64-pc-windows-msvc/dure-sijang-x86_64.exe \
             ./artifacts/dure-sijang-i686-pc-windows-msvc/dure-sijang-i686.exe \
             ./artifacts/dure-sijang-aarch64-pc-windows-msvc/dure-sijang-aarch64.exe; do
@@ -447,7 +447,7 @@ jobs:
             ./artifacts/dure-sijang-armv7-unknown-linux-musleabihf/dure-sijang \
             ./artifacts/dure-sijang-x86_64-apple-darwin/dure-sijang \
             ./artifacts/dure-sijang-x86_64-unknown-linux-musl/dure-sijang \
-            # ./artifacts/dure-sijang-x86_64-unknown-freebsd/dure-sijang \
+            ./artifacts/dure-sijang-x86_64-unknown-freebsd/dure-sijang \
             ./artifacts/dure-sijang-x86_64-pc-windows-msvc/dure-sijang-x86_64.exe \
             ./artifacts/dure-sijang-i686-pc-windows-msvc/dure-sijang-i686.exe \
             ./artifacts/dure-sijang-aarch64-pc-windows-msvc/dure-sijang-aarch64.exe
