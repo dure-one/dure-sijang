@@ -220,6 +220,20 @@ jobs:
           release: ${{ matrix.platform.freebsd_version }}
           usesh: true
           prepare: |
+            # Enable FreeBSD package repository
+            mkdir -p /usr/local/etc/pkg/repos
+            cat > /usr/local/etc/pkg/repos/FreeBSD.conf << 'PKGCONF'
+            FreeBSD: {
+              url: "pkg+http://pkg.FreeBSD.org/${ABI}/quarterly",
+              mirror_type: "srv",
+              signature_type: "fingerprints",
+              fingerprints: "/usr/share/keys/pkg",
+              enabled: yes
+            }
+            PKGCONF
+
+            # Update package database and install dependencies
+            pkg update -f
             pkg install -y curl pkgconf gtk3 cairo pango gdk-pixbuf2 at-spi2-core pixman wayland bzip2 webkit2-gtk libsoup3
             ln -sf /usr/local/bin/pkgconf /usr/local/bin/pkg-config || true
             export PKG_CONFIG_PATH=/usr/local/libdata/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig
