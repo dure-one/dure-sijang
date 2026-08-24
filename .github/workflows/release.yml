@@ -232,7 +232,8 @@ jobs:
             }
             PKGCONF
 
-            # Update package database and install dependencies
+            # Update package database and install dependencies (ignore OS version mismatch)
+            export IGNORE_OSVERSION=yes
             pkg update -f
             pkg install -y curl pkgconf gtk3 cairo pango gdk-pixbuf2 at-spi2-core pixman wayland bzip2 webkit2-gtk libsoup3
             ln -sf /usr/local/bin/pkgconf /usr/local/bin/pkg-config || true
