@@ -235,6 +235,12 @@ jobs:
             # Update package database and install dependencies (ignore OS version mismatch)
             export IGNORE_OSVERSION=yes
             pkg update -f
+
+            # Search for available webkit2 packages
+            echo "=== Searching for webkit2 packages ==="
+            pkg search webkit2 || true
+            echo "==================================="
+
             pkg install -y curl pkgconf gtk3 cairo pango gdk-pixbuf2 at-spi2-core pixman wayland bzip2 webkit2-gtk libsoup3
             ln -sf /usr/local/bin/pkgconf /usr/local/bin/pkg-config || true
             export PKG_CONFIG_PATH=/usr/local/libdata/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig
