@@ -4,12 +4,12 @@
 use eframe::egui;
 use sys_locale;
 
-mod android_activity;
 #[cfg(target_os = "android")]
 mod android_activity_embedding;
 mod android_clipboard;
 mod android_contexttheme;
 mod android_inputmethod;
+mod android_log;
 mod android_packagemanager;
 mod android_webview;
 mod clipboard_popup;
