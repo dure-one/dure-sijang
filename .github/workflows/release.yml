@@ -220,7 +220,7 @@ jobs:
           release: ${{ matrix.platform.freebsd_version }}
           usesh: true
           prepare: |
-            pkg install -y curl pkgconf gtk3 cairo pango gdk-pixbuf2 at-spi2-core pixman wayland bzip2 webkit2-gtk3 libsoup3
+            pkg install -y curl pkgconf gtk3 cairo pango gdk-pixbuf2 at-spi2-core pixman wayland bzip2 webkit2-gtk libsoup3
             ln -sf /usr/local/bin/pkgconf /usr/local/bin/pkg-config || true
             export PKG_CONFIG_PATH=/usr/local/libdata/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig
             mkdir -p /usr/local/libdata/pkgconfig
