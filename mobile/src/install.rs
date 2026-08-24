@@ -593,7 +593,7 @@ Icon={}
 Terminal=false
 Type=Application
 Categories=Utility;Development;
-Keywords=android;debloat;shizuku;adb;
+Keywords=android;debloat;adb;
 "#,
         CURRENT_VERSION,
         binary_dest.display(),
@@ -1604,7 +1604,7 @@ Icon={}
 Terminal=false
 Type=Application
 Categories=Utility;Development;
-Keywords=android;debloat;shizuku;adb;
+Keywords=android;debloat;adb;
 "#,
                 ver,
                 dest.display(),

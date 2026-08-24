@@ -1,10 +1,8 @@
 ---
-title: dure-sijang
-titleTemplate: shizuku(무선 ADB)를 사용하는 범용 안드로이드 디블로터
+title: 두레시장
 layout: home
 
 hero:
-  text: shizuku를 사용하는 범용 안드로이드 디블로터
   actions:
     - text: 설명서
       link: /docs/kr/readme

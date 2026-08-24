@@ -12,7 +12,7 @@ description: |
   * Get android foss offa app list and install through obtanium
   * Get android foss fmhy app list and install through obtanium
 
-  It supports android mode(apk) with adb wireless shizuku and
+  It supports android mode(apk) with
   linux/macos/windows mode(binary) with adb platform-tools.
 
   Open source, cross-platform, written in Rust.

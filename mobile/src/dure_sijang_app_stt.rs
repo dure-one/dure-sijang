@@ -91,7 +91,6 @@ mod uad_ng_lists_tests {
 #[doc(hidden)]
 pub struct DureSijangApp {
     pub config: Option<Config>,
-    pub shizuku_connected: bool,
     // top app bar state
     pub title_text: String,
     pub show_navigation: bool,

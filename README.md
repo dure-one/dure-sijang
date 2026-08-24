@@ -1,6 +1,6 @@
 <img src="./imgs/logo110.png" alt="drawing" width="120"/>
 
-# Dure-Sijang
+# Dure-Sijang(두레시장)
 
 Cross-platform mycart browser with dual-mode navigation.
 

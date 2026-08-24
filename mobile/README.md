@@ -124,7 +124,6 @@ https://play.google.com/console/u/1/developers/8469971848379081167/app/497607944
 - additional test invitation link : https://play.google.com/apps/internaltest/4700175684927727957
 - join on the web link : https://play.google.com/apps/testing/pe.nikescar.dure_sijang
 - youtube instructions : https://www.youtube.com/shorts/OuPw-hi4-c4
-- shizuku app link : https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api&hl=en
 - other instructions : https://dure-sijang.pages.dev/docs/usage
 ```
 

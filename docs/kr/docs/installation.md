@@ -1,10 +1,10 @@
 # 설치 가이드
 
-이 가이드는 Windows, macOS, Linux에서 Dure-Sijang와 필수 구성 요소를 설치하는 방법을 안내합니다. Dure-Sijang는 Android 기기와 통신하여 블로트웨어 제거, 앱 검사, 앱 설치를 수행하기 위해 ADB(Android Debug Bridge)가 필요합니다.
+이 가이드는 Windows, macOS, Linux에서 두레시장과 필수 구성 요소를 설치하는 방법을 안내합니다. Dure-Sijang는 Android 기기와 통신하여 블로트웨어 제거, 앱 검사, 앱 설치를 수행하기 위해 ADB(Android Debug Bridge)가 필요합니다.
 
 ## 개요
 
-Dure-Sijang를 사용하기 전에 다음이 필요합니다:
+두레시장을 사용하기 전에 다음이 필요합니다:
 
 1. **ADB Platform-tools** - 모든 플랫폼에서 Android 기기와 통신하는 데 필요
 2. **VC 재배포 가능 패키지** (Windows 전용) - Microsoft Visual C++ 런타임 라이브러리

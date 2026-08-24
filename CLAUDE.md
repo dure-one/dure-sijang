@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 1. Overview
 
-Dure-Sijang is a cross-platform "mycart" designated browser. "mycart" is go-fiber backed web store. any indivisual could have their own store and each-store can be connected very well.
+Dure-Sijang(두레시장) is a cross-platform "mycart" designated browser. "mycart" is go-fiber backed web store. any indivisual could have their own store and each-store can be connected very well.
 Dure-Sijang will help user to navigate through multiple "mycart" websites with downloading directories from dure.one. this app supports 2 mode. 1. webview mode - which will navigate each website through webview.
 2. api mode - which will navagate "mycart" with their api only.
 
@@ -40,7 +40,6 @@ dure-sijang/
 │   │   ├── main_android.rs         # Android entry point
 │   │   ├── lib.rs                  # Library exports, Config, Settings
 │   │   ├── adb.rs                  # ADB client implementation
-│   │   ├── android_shizuku.rs      # Shizuku JNI integration (Android)
 │   │   ├── android_*.rs            # Android platform integration modules
 │   │   ├── browser_ui.rs           # Browser UI component (tab bar, navigation) [NEW Aug 2026]
 │   │   ├── webview_tab.rs          # WebView tab (wry integration) [NEW Aug 2026]

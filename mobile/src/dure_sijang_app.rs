@@ -190,7 +190,6 @@ impl Default for DureSijangApp {
 
         let mut app = Self {
             config: config,
-            shizuku_connected: false,
 
             title_text: "UAD-Shizuku".to_string(),
             show_navigation: false,

@@ -1,8 +1,8 @@
-# Dure-Sijang
+# 두레시장 
 
 여러 mycart 스토어를 탐색할 수 있는 Mycart 전용 브라우저입니다.
 
-Dure-Sijang는 go-fiber 기반 웹스토어 플랫폼인 mycart를 위한 크로스 플랫폼 브라우저입니다. <br/>
+두레시장은 go-fiber 기반 웹스토어 플랫폼인 mycart를 위한 크로스 플랫폼 브라우저입니다. <br/>
 각 mycart 스토어는 독립적인 웹스토어로 효율적으로 탐색할 수 있습니다.
 
 ## 기능
