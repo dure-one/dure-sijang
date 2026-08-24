@@ -16,9 +16,8 @@ Cargo.lock
 *.log
 node.core
 
-# Android keystore (sensitive credentials)
-.upload/release.keystore
-.upload/keystore.properties
-.upload/release.keystore.base64
+# Android keystore and certificates (sensitive credentials)
+.upload/
+scripts/certificate*
 
 reference/
