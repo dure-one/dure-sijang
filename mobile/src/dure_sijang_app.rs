@@ -58,9 +58,10 @@ pub fn init_common() {
 pub fn init_egui(ctx: &Context) {
     setup_local_theme(Some("resources/material-theme.json"));
     // material icon fonts https://github.com/google/material-design-icons
+    // Using subset font (12 icons, ~100KB) instead of full font (9.6MB)
     setup_local_fonts_from_bytes(
         "MaterialSymbolsOutlined",
-        include_bytes!("../resources/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf"),
+        include_bytes!("../resources/MaterialSymbolsOutlined_subset.ttf"),
     );
     setup_local_fonts_from_bytes(
         "NotoSansKr",

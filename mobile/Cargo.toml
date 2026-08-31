@@ -145,3 +145,4 @@ sqlite-wasm-rs = "0.5.1"
 [build-dependencies]
 winres = "0.1.12"
 ureq = { version = "2.12", default-features = false, features = ["tls"] }
+fontcull = { version = "2", default-features = false }
