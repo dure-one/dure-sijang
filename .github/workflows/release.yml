@@ -39,25 +39,25 @@ jobs:
             build-args: "--release"
             platform_type: linux
 
-          - name: Linux x86
-            target: i686-unknown-linux-musl
-            build-args: "--release"
-            platform_type: linux
+          # - name: Linux x86
+          #   target: i686-unknown-linux-musl
+          #   build-args: "--release"
+          #   platform_type: linux
 
           - name: Linux aarch64
             target: aarch64-unknown-linux-musl
             build-args: "--release"
             platform_type: linux
 
-          - name: Linux armv7hf
-            target: armv7-unknown-linux-musleabihf
-            build-args: "--release"
-            platform_type: linux
+          # - name: Linux armv7hf
+          #   target: armv7-unknown-linux-musleabihf
+          #   build-args: "--release"
+          #   platform_type: linux
 
-          - name: Linux armv6
-            target: arm-unknown-linux-musleabihf
-            build-args: "--release"
-            platform_type: linux
+          # - name: Linux armv6
+          #   target: arm-unknown-linux-musleabihf
+          #   build-args: "--release"
+          #   platform_type: linux
 
           # FreeBSD (disabled)
           # - name: FreeBSD x86_64
@@ -66,20 +66,20 @@ jobs:
           #   freebsd_version: "14.2"
           #   platform_type: freebsd
 
-          - name: Android aarch64
-            target: aarch64-linux-android
-            build-args: "--release"
-            platform_type: android
+          # - name: Android aarch64
+          #   target: aarch64-linux-android
+          #   build-args: "--release"
+          #   platform_type: android
 
           - name: Android APK arm64
             target: aarch64-linux-android
             build-args: "--release"
             platform_type: android
 
-          - name: Android armv7
-            target: armv7-linux-androideabi
-            build-args: "--release"
-            platform_type: android
+          # - name: Android armv7
+          #   target: armv7-linux-androideabi
+          #   build-args: "--release"
+          #   platform_type: android
 
           #- name: Linux mips
           #  target: mips-unknown-linux-musl
@@ -418,17 +418,17 @@ jobs:
           FOUND=0
           for file in \
             ./artifacts/dure-sijang-aarch64-apple-darwin/dure-sijang \
-            ./artifacts/dure-sijang-aarch64-linux-android/dure-sijang \
             ./artifacts/dure-sijang-aarch64-unknown-linux-musl/dure-sijang \
             ./artifacts/dure-sijang-all-signed.apk/dure-sijang-all-signed.apk \
-            ./artifacts/dure-sijang-armv7-linux-androideabi/dure-sijang \
-            ./artifacts/dure-sijang-armv7-unknown-linux-musleabihf/dure-sijang \
             ./artifacts/dure-sijang-x86_64-apple-darwin/dure-sijang \
             ./artifacts/dure-sijang-x86_64-unknown-linux-musl/dure-sijang \
-            # ./artifacts/dure-sijang-x86_64-unknown-freebsd/dure-sijang \
             ./artifacts/dure-sijang-x86_64-pc-windows-msvc/dure-sijang-x86_64.exe \
             ./artifacts/dure-sijang-i686-pc-windows-msvc/dure-sijang-i686.exe \
             ./artifacts/dure-sijang-aarch64-pc-windows-msvc/dure-sijang-aarch64.exe; do
+            # ./artifacts/dure-sijang-aarch64-linux-android/dure-sijang \
+            # ./artifacts/dure-sijang-armv7-linux-androideabi/dure-sijang \
+            # ./artifacts/dure-sijang-armv7-unknown-linux-musleabihf/dure-sijang \
+            # ./artifacts/dure-sijang-x86_64-unknown-freebsd/dure-sijang \
             if [ -f "$file" ]; then
               echo "✓ Found: $file ($(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "unknown") bytes)"
               FOUND=$((FOUND + 1))
@@ -461,17 +461,17 @@ jobs:
           python .github/scripts/virustotal_scan.py \
             "${{ secrets.VT_API_KEY }}" \
             ./artifacts/dure-sijang-aarch64-apple-darwin/dure-sijang \
-            ./artifacts/dure-sijang-aarch64-linux-android/dure-sijang \
             ./artifacts/dure-sijang-aarch64-unknown-linux-musl/dure-sijang \
             ./artifacts/dure-sijang-all-signed.apk/dure-sijang-all-signed.apk \
-            ./artifacts/dure-sijang-armv7-linux-androideabi/dure-sijang \
-            ./artifacts/dure-sijang-armv7-unknown-linux-musleabihf/dure-sijang \
             ./artifacts/dure-sijang-x86_64-apple-darwin/dure-sijang \
             ./artifacts/dure-sijang-x86_64-unknown-linux-musl/dure-sijang \
-            # ./artifacts/dure-sijang-x86_64-unknown-freebsd/dure-sijang \
             ./artifacts/dure-sijang-x86_64-pc-windows-msvc/dure-sijang-x86_64.exe \
             ./artifacts/dure-sijang-i686-pc-windows-msvc/dure-sijang-i686.exe \
             ./artifacts/dure-sijang-aarch64-pc-windows-msvc/dure-sijang-aarch64.exe
+            # ./artifacts/dure-sijang-aarch64-linux-android/dure-sijang \
+            # ./artifacts/dure-sijang-armv7-linux-androideabi/dure-sijang \
+            # ./artifacts/dure-sijang-armv7-unknown-linux-musleabihf/dure-sijang \
+            # ./artifacts/dure-sijang-x86_64-unknown-freebsd/dure-sijang \
 
       - name: Parse Analysis Results
         id: parse_results
