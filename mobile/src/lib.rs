@@ -254,7 +254,7 @@ impl Config {
 
         #[cfg(not(target_os = "android"))]
         {
-            let proj_dirs = ProjectDirs::from("pe", "nikescar", "dure_sijang")
+            let proj_dirs = ProjectDirs::from("app", "dure", "sijang")
                 .context("Failed to get project directories")?;
 
             let config_dir = proj_dirs.config_dir().to_path_buf();

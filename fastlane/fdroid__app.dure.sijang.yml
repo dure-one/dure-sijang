@@ -67,6 +67,6 @@ Builds:
 
 AutoUpdateMode: Version v%v
 UpdateCheckMode: HTTP
-UpdateCheckData: https://api.github.com/repos/nikescar/dure-sijang/releases/latest|"id":\s*(\d+)|.|"tag_name":\s*"v([^"]+)"
+UpdateCheckData: https://api.github.com/repos/dure-one/dure-sijang/releases/latest|"id":\s*(\d+)|.|"tag_name":\s*"v([^"]+)"
 CurrentVersion: 0.0.10
 CurrentVersionCode: 290636626

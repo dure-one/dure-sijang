@@ -13,7 +13,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 const APP_NAME: &str = "dure-sijang";
-const GITHUB_REPO: &str = "nikescar/dure-sijang";
+const GITHUB_REPO: &str = "dure-one/dure-sijang";
 const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Get versioned app name (e.g., "dure-sijang-1.0.0")
