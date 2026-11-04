@@ -154,7 +154,7 @@ pub struct DureSijangApp {
     // WebView widgets (stored separately from BrowserState metadata)
     // Desktop-only: egui_webview is not available on Android
     #[cfg(not(target_os = "android"))]
-    pub webview_widgets: std::collections::HashMap<egui::Id, egui_webview::EguiWebView>,
+    pub webview_widgets: std::collections::HashMap<egui::Id, crate::egui_webview::EguiWebView>,
 
     // WebView LRU cache tracking (desktop-only)
     #[cfg(not(target_os = "android"))]

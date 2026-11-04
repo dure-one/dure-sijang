@@ -12,6 +12,11 @@ mod android_inputmethod;
 mod android_log;
 mod android_packagemanager;
 mod android_webview;
+
+// Vendored egui_webview for z-index control (desktop-only)
+#[cfg(not(target_os = "android"))]
+pub mod egui_webview;
+
 mod clipboard_popup;
 mod dlg_about;
 pub mod dlg_about_stt;

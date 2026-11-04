@@ -839,7 +839,7 @@ impl eframe::App for DureSijangApp {
             // Initialize egui_webview for browser functionality (desktop-only)
             #[cfg(not(target_os = "android"))]
             {
-                egui_webview::init_webview(ctx);
+                crate::egui_webview::init_webview(ctx);
                 log::error!("Initialized egui_webview for browser");
 
                 // Create default tab if no tabs exist (first run)
@@ -854,7 +854,7 @@ impl eframe::App for DureSijangApp {
                         if active_idx < self.browser_state.tabs.len() {
                             let tab = &self.browser_state.tabs[active_idx];
                             if !self.webview_widgets.contains_key(&tab.id) {
-                                use egui_webview::EguiWebView;
+                                use crate::egui_webview::EguiWebView;
                                 let view = EguiWebView::new(ctx, tab.id, frame, |builder| {
                                     builder.with_url(&tab.url_bar)
                                 });
@@ -908,12 +908,28 @@ impl eframe::App for DureSijangApp {
 
         // End webview frame (desktop-only)
         #[cfg(not(target_os = "android"))]
-        egui_webview::webview_end_frame(ctx);
+        crate::egui_webview::webview_end_frame(ctx);
     }
 }
 
-// ===== WebView Management Methods (NEW - Task 5) =====
+// ===== WebView Management Methods =====
 impl DureSijangApp {
+    /// Check if any dialog is currently open
+    fn is_any_dialog_open(&self) -> bool {
+        self.dlg_settings.open || self.dlg_update.open || self.dlg_about.open
+    }
+
+    /// Set visibility for all WebViews (desktop-only z-index control)
+    ///
+    /// # Arguments
+    /// * `visible` - true to show WebViews, false to hide them
+    #[cfg(not(target_os = "android"))]
+    fn set_webviews_visible(&mut self, visible: bool) {
+        for view in self.webview_widgets.values() {
+            let _ = view.view.set_visible(visible);
+        }
+    }
+
     /// Navigate the webview back in history (desktop-only)
     ///
     /// # Arguments
@@ -1055,7 +1071,7 @@ impl DureSijangApp {
         }
 
         // Create EguiWebView widget
-        use egui_webview::EguiWebView;
+        use crate::egui_webview::EguiWebView;
         let view = EguiWebView::new(ctx, tab_id, frame, |builder| {
             builder.with_url(url)
         });
@@ -1746,7 +1762,7 @@ impl DureSijangApp {
                                 self.evict_lru_webview();
                             }
 
-                            use egui_webview::EguiWebView;
+                            use crate::egui_webview::EguiWebView;
                             let view = EguiWebView::new(ui.ctx(), active_tab_id, frame, |builder| {
                                 builder.with_url(&active_tab_url)
                             });
@@ -1770,7 +1786,7 @@ impl DureSijangApp {
 
                                 // Handle navigation events
                                 for event in response.events {
-                                    if let egui_webview::WebViewEvent::Loaded(new_url) = event {
+                                    if let crate::egui_webview::WebViewEvent::Loaded(new_url) = event {
                                         self.browser_state.update_tab_url(active_idx, &new_url, Some(&new_url));
                                         log::info!("Tab {} navigated to {}", active_idx, new_url);
                                     }
