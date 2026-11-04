@@ -318,8 +318,10 @@ pub fn init_i18n() {
     let en_us = String::from_utf8_lossy(include_bytes!("../assets/languages/fluent/en-US.ftl"));
     let ko_kr = String::from_utf8_lossy(include_bytes!("../assets/languages/fluent/ko-KR.ftl"));
 
-    egui_i18n::load_translations_from_text("en-US", en_us).unwrap();
-    egui_i18n::load_translations_from_text("ko-KR", ko_kr).unwrap();
+    egui_i18n::load_translations_from_text("en-US", en_us)
+        .expect("Failed to parse en-US.ftl: check Fluent syntax");
+    egui_i18n::load_translations_from_text("ko-KR", ko_kr)
+        .expect("Failed to parse ko-KR.ftl: check Fluent syntax");
 
     // Detect system language instead of hardcoding en-US
     let system_language = match sys_locale::get_locale().as_deref() {

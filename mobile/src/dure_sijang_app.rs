@@ -434,7 +434,7 @@ impl DureSijangApp {
     pub fn ui_internal(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let available_width = ui.ctx().content_rect().width();
         let is_desktop = available_width > crate::DESKTOP_MIN_WIDTH;
-        log::error!("ui_internal called, available_width={}, is_desktop={}", available_width, is_desktop);
+        log::trace!("ui_internal called, available_width={}, is_desktop={}", available_width, is_desktop);
 
         // Apply theme at the start of UI rendering
         apply_theme(ui.ctx(), Some(Self::detect_os_theme));
@@ -801,7 +801,7 @@ impl DureSijangApp {
     }
 
     fn render_desktop_tabs(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
-        log::error!("render_desktop_tabs called");
+        log::trace!("render_desktop_tabs called");
         // Browser UI replaces legacy Dure-Sijang tabs
         self.render_browser_ui(ui, frame);
     }
@@ -917,7 +917,7 @@ impl View for DureSijangApp {
 
 impl eframe::App for DureSijangApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        log::error!("UPDATE CALLED, first_update_done={}", self.first_update_done);
+        log::debug!("UPDATE CALLED, first_update_done={}", self.first_update_done);
 
         // Process GTK events for webview (Linux/OpenBSD)
         #[cfg(any(
@@ -955,25 +955,25 @@ impl eframe::App for DureSijangApp {
 
                 // Create default tab if no tabs exist (first run)
                 if self.browser_state.tabs.is_empty() {
-                    self.add_browser_tab(ctx, frame, "https://dure.app");
+                    self.add_browser_tab(ctx, frame, "https://www.dure.app");
                     log::error!("Created default browser tab");
                 } else {
-                    // Tabs were loaded from database - create webview widgets for them
-                    // (tab metadata exists but webview_widgets HashMap is empty)
-                    for tab in &self.browser_state.tabs {
-                        // Only create webview if one doesn't already exist for this tab
-                        if !self.webview_widgets.contains_key(&tab.id) {
-                            use egui_webview::EguiWebView;
-                            let view = EguiWebView::new(ctx, tab.id, frame, |builder| {
-                                builder.with_url(&tab.url_bar)
-                            });
-                            self.webview_widgets.insert(tab.id, view);
-                            log::error!("Created webview for loaded tab {:?} with URL: {}", tab.id, tab.url_bar);
+                    // Tabs loaded from database - create webview only for active tab (lazy initialization)
+                    // Other tabs get webviews created on-demand when switched to
+                    #[cfg(not(target_os = "android"))]
+                    if let Some(active_idx) = self.browser_state.active_tab_index {
+                        if active_idx < self.browser_state.tabs.len() {
+                            let tab = &self.browser_state.tabs[active_idx];
+                            if !self.webview_widgets.contains_key(&tab.id) {
+                                use egui_webview::EguiWebView;
+                                let view = EguiWebView::new(ctx, tab.id, frame, |builder| {
+                                    builder.with_url(&tab.url_bar)
+                                });
+                                self.webview_widgets.insert(tab.id, view);
+                                log::info!("Created webview for active tab {} at startup", active_idx);
+                            }
                         }
                     }
-                    log::error!("Initialized {} webviews for {} loaded tabs",
-                               self.webview_widgets.len(),
-                               self.browser_state.tabs.len());
                 }
             }
 
@@ -1106,12 +1106,12 @@ impl DureSijangApp {
             log::error!("First launch - creating 2 default tabs");
 
             // Create 2 tabs to dure.app (metadata only, no WebView yet)
-            self.browser_state.add_tab("https://dure.app", "dure.app");
-            self.browser_state.add_tab("https://dure.app", "dure.app");
+            self.browser_state.add_tab("https://www.dure.app", "dure.app");
+            self.browser_state.add_tab("https://www.dure.app", "dure.app");
 
             // Set first tab as active
             self.browser_state.active_tab_index = Some(0);
-            self.browser_state.url_input = "https://dure.app".to_string();
+            self.browser_state.url_input = "https://www.dure.app".to_string();
 
             log::error!(
                 "Created {} tabs, active tab: {:?}",
@@ -1398,10 +1398,10 @@ impl DureSijangApp {
         let is_desktop = ui.available_width() > crate::DESKTOP_MIN_WIDTH;
 
         if let Some(idx) = self.browser_state.active_tab_index {
-            log::error!("render_browser_ui: {} tabs, active_tab_index=Some({})",
+            log::trace!("render_browser_ui: {} tabs, active_tab_index=Some({})",
                        self.browser_state.tabs.len(), idx);
         } else {
-            log::error!("render_browser_ui: {} tabs, active_tab_index=None",
+            log::trace!("render_browser_ui: {} tabs, active_tab_index=None",
                        self.browser_state.tabs.len());
         }
 
@@ -1487,6 +1487,19 @@ impl DureSijangApp {
                                 }
                             }
 
+                            // Desktop: Destroy old webview, new one created on-demand (mirrors Android pattern)
+                            #[cfg(not(target_os = "android"))]
+                            {
+                                if let Some(prev_idx) = self.browser_state.active_tab_index {
+                                    if prev_idx != idx {
+                                        let prev_tab_id = self.browser_state.tabs[prev_idx].id;
+                                        if self.webview_widgets.remove(&prev_tab_id).is_some() {
+                                            log::info!("Destroyed webview for tab {} on switch", prev_idx);
+                                        }
+                                    }
+                                }
+                            }
+
                             self.browser_state.active_tab_index = Some(idx);
                             self.browser_state.url_input = tab.url_bar.clone();
                         }
@@ -1503,7 +1516,7 @@ impl DureSijangApp {
                 let can_add_tab = self.browser_state.tabs.len() < MAX_TABS;
                 let add_button = ui.add_enabled(can_add_tab, egui::Button::new("+"));
                 if add_button.clicked() {
-                    self.add_browser_tab(ui.ctx(), frame, "https://dure.app");
+                    self.add_browser_tab(ui.ctx(), frame, "https://www.dure.app");
                 }
                 if !can_add_tab {
                     add_button.on_disabled_hover_text("Maximum 20 tabs. Close some tabs to create new ones.");
@@ -1582,8 +1595,8 @@ impl DureSijangApp {
                 ui.label("URL:");
                 let response = ui.add(
                     TextEdit::singleline(&mut self.browser_state.url_input)
-                        .id(egui::Id::new("browser_url_input"))  // Stable ID for focus detection
-                        .desired_width(ui.available_width() - 120.0),
+                        .id(egui::Id::new("browser_url_input"))
+                        .desired_width(ui.available_width() - 120.0)
                 );
 
                 #[cfg(target_os = "android")]
@@ -1601,7 +1614,9 @@ impl DureSijangApp {
                     &mut self.browser_state.url_input,
                 );
 
-                if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                // Handle Enter key to navigate (works when TextEdit has focus OR when it just lost focus)
+                let enter_pressed = response.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
+                if (response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter))) || enter_pressed {
                     if let Some(idx) = self.browser_state.active_tab_index {
                         let url = Self::ensure_protocol(&self.browser_state.url_input);
                         // Update metadata
@@ -1714,7 +1729,7 @@ impl DureSijangApp {
                         let can_add_tab = self.browser_state.tabs.len() < MAX_TABS;
                         let add_button = ui.add_enabled(can_add_tab, egui::Button::new("+ New Tab"));
                         if add_button.clicked() {
-                            self.add_browser_tab(ui.ctx(), frame, "https://dure.app");
+                            self.add_browser_tab(ui.ctx(), frame, "https://www.dure.app");
                         }
                         if !can_add_tab {
                             add_button.on_disabled_hover_text("Maximum 20 tabs. Close some tabs to create new ones.");
@@ -1722,50 +1737,39 @@ impl DureSijangApp {
                     });
                 });
             } else {
-                // Browser content area - render all webviews, show only active (desktop-only)
+                // Browser content area - single active webview (desktop-only, mirrors Android pattern)
                 #[cfg(not(target_os = "android"))]
                 {
-                    // Collect URL updates first to avoid borrow conflicts
-                    let mut url_updates: Vec<(usize, String)> = Vec::new();
+                    // Only render active tab's webview
+                    if let Some(active_idx) = self.browser_state.active_tab_index {
+                        let tab = &self.browser_state.tabs[active_idx];
 
-                    // Check if address bar has focus or menu is open
-                    let address_bar_focused = ui.memory(|mem| {
-                        mem.focused().map_or(false, |id| id == egui::Id::new("browser_url_input"))
-                    });
-                    let menu_open = self.standard_menu_open;
-                    let dialog_open = self.dlg_settings.open;
+                        // Create webview if doesn't exist for active tab
+                        if !self.webview_widgets.contains_key(&tab.id) {
+                            use egui_webview::EguiWebView;
+                            let view = EguiWebView::new(ui.ctx(), tab.id, frame, |builder| {
+                                builder.with_url(&tab.url_bar)
+                            });
+                            self.webview_widgets.insert(tab.id, view);
+                            log::info!("Created webview for tab {} on demand", active_idx);
+                        }
 
-                    for (idx, tab) in self.browser_state.tabs.iter().enumerate() {
-                        let is_active = Some(idx) == self.browser_state.active_tab_index;
-
-                        // Size control: hide webviews if address bar focused, menu open, or dialog open (fixes keyboard/z-index issues)
-                        let size = if is_active && !address_bar_focused && !menu_open && !dialog_open {
-                            ui.available_size()
-                        } else {
-                            egui::vec2(0.0, 0.0)
-                        };
-
-                        // Render webview (if exists for this tab)
+                        // Render only active webview (always visible)
                         if let Some(view) = self.webview_widgets.get_mut(&tab.id) {
+                            let size = ui.available_size();
+
                             ui.push_id(tab.id, |ui| {
                                 let response = view.ui(ui, size);
 
-                                // Handle navigation events (active tab only)
-                                if is_active {
-                                    for event in response.events {
-                                        if let egui_webview::WebViewEvent::Loaded(new_url) = event {
-                                            url_updates.push((idx, new_url));
-                                        }
+                                // Handle navigation events
+                                for event in response.events {
+                                    if let egui_webview::WebViewEvent::Loaded(new_url) = event {
+                                        self.browser_state.update_tab_url(active_idx, &new_url, Some(&new_url));
+                                        log::info!("Tab {} navigated to {}", active_idx, new_url);
                                     }
                                 }
                             });
                         }
-                    }
-
-                    // Apply URL updates after iteration (tab title will show URL)
-                    for (idx, new_url) in url_updates {
-                        self.browser_state.update_tab_url(idx, &new_url, Some(&new_url));
-                        log::error!("Tab {} navigated to {}", idx, new_url);
                     }
                 }
             }

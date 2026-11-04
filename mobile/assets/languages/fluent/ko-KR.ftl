@@ -239,7 +239,6 @@ install-dlg-step4 = 4. Shizuku 서비스 시작():
 install-dlg-step5 = 5. Dure-Sijang로 돌아가서 재감지 탭
 install-dlg-detailed-instructions = 자세한 설명:
 install-dlg-guide = 설치 가이드
-install-dlg-guide-url = 
 install-dlg-adb-not-found = ADB (Android Debug Bridge)가 시스템 PATH에서 찾을 수 없습니다.
 install-dlg-follow-guide = ADB를 설치하려면 설치 가이드를 따라주세요:
 install-dlg-retry = 재감지

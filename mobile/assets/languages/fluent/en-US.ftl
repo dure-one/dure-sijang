@@ -239,7 +239,6 @@ install-dlg-step4 = 4. Start Shizuku Service():
 install-dlg-step5 = 5. Return to Dure-Sijang and tap Retry Detection
 install-dlg-detailed-instructions = For detailed instructions:
 install-dlg-guide = Installation Guide
-install-dlg-guide-url = 
 install-dlg-adb-not-found = ADB (Android Debug Bridge) is required but not found in your system PATH.
 install-dlg-follow-guide = Please follow the installation guide to install ADB:
 install-dlg-retry = Retry Detection
