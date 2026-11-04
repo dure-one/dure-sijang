@@ -70,8 +70,8 @@ impl Drop for EguiWebView {
         println!("🗑️  Dropping EguiWebView {:?}", self.id);
         println!("   Arc strong count: {}", Arc::strong_count(&self.view));
 
-        // Explicitly hide the webview before dropping
-        self.view.set_visible(false).ok();
+        // Don't call set_visible(false) - X11 window may already be destroyed
+        // Visibility cleanup is handled by webview_end_frame() during normal operation
     }
 }
 
