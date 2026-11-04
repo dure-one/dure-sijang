@@ -1,8 +1,6 @@
 //! Desktop entry point for Dure-Sijang
 //!
 //! Command-line options:
-//! - `--silent` flag: Performs silent installation and exits (desktop only)
-//! - `--uninstall` flag: Performs uninstallation and exits (desktop only)
 //! - `--log [FILE]`: Enable file logging (defaults to dure-sijang.log if FILE not specified)
 
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
@@ -141,9 +139,6 @@ fn main() -> eframe::Result<()> {
         log_file_opt
     };
 
-    let silent_install = args.iter().any(|arg| arg == "--silent");
-    let uninstall = args.iter().any(|arg| arg == "--uninstall");
-
     // Initialize logger
     if let Some(log_path) = &log_file {
         // File-based logging
@@ -206,62 +201,6 @@ fn main() -> eframe::Result<()> {
 
         dure_sijang::log_capture::init_combined_logger(level_filter);
         log::info!("Dure-Sijang v{} starting", env!("CARGO_PKG_VERSION"));
-    }
-
-    // Handle --uninstall argument (for Windows Add/Remove Programs)
-    #[cfg(not(target_os = "android"))]
-    if uninstall {
-        log::info!("Running in uninstall mode (--uninstall flag)");
-
-        use dure_sijang::install;
-        use dure_sijang::install_stt::InstallResult;
-
-        match install::do_uninstall() {
-            InstallResult::Success(msg) => {
-                log::info!("Uninstallation succeeded: {}", msg);
-                println!("{}", msg);
-                std::process::exit(0);
-            }
-            InstallResult::Error(err) => {
-                log::error!("Uninstallation failed: {}", err);
-                eprintln!("Uninstallation failed: {}", err);
-                std::process::exit(1);
-            }
-        }
-    }
-
-    #[cfg(target_os = "android")]
-    if uninstall {
-        eprintln!("Uninstall not supported on Android");
-        std::process::exit(1);
-    }
-
-    // Handle --silent install mode (desktop only)
-    #[cfg(not(target_os = "android"))]
-    if silent_install {
-        log::info!("Running in silent install mode (--silent flag)");
-
-        use dure_sijang::install;
-        use dure_sijang::install_stt::InstallResult;
-
-        match install::do_install() {
-            InstallResult::Success(msg) => {
-                log::info!("Silent installation succeeded: {}", msg);
-                println!("{}", msg);
-                std::process::exit(0);
-            }
-            InstallResult::Error(err) => {
-                log::error!("Silent installation failed: {}", err);
-                eprintln!("Installation failed: {}", err);
-                std::process::exit(1);
-            }
-        }
-    }
-
-    #[cfg(target_os = "android")]
-    if silent_install {
-        eprintln!("Silent install not supported on Android");
-        std::process::exit(1);
     }
 
     // Hide console on Windows for GUI mode (unless --log is specified)

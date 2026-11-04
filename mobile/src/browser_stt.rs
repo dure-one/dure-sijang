@@ -3,6 +3,7 @@ use crate::models::browser::{Tab, Bookmark};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SidebarTab {
+    Menu,
     Bookmarks,
     History,
 }
@@ -12,6 +13,7 @@ pub struct BrowserState {
     pub tabs: Vec<WebTab>,
     pub active_tab_index: Option<usize>,
     pub sidebar_open: bool,
+    pub menu_sidebar_open: bool,  // NEW: separate menu sidebar
     pub url_input: String,
     pub next_tab_id: usize,
     pub bookmarks: Vec<Bookmark>,
@@ -35,10 +37,11 @@ impl BrowserState {
             tabs: Vec::new(),
             active_tab_index: None,
             sidebar_open: true,
+            menu_sidebar_open: false,  // Menu sidebar starts closed
             url_input: String::new(),
             next_tab_id: 0,
             bookmarks: Vec::new(),
-            sidebar_tab: SidebarTab::Bookmarks,
+            sidebar_tab: SidebarTab::Menu,
             history_entries: Vec::new(),
         }
     }
@@ -97,7 +100,7 @@ impl BrowserState {
             state.bookmarks = bookmarks;
         }
 
-        state.sidebar_tab = SidebarTab::Bookmarks;
+        state.sidebar_tab = SidebarTab::Menu;
         state.load_history();
 
         state

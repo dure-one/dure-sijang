@@ -1,5 +1,3 @@
-#[cfg(not(target_os = "android"))]
-use crate::install_stt::InstallStatus;
 use crate::Config;
 use crate::LogLevel;
 use crate::Settings;
@@ -136,14 +134,6 @@ pub struct DureSijangApp {
     // pub dlg_dashcounter_details: crate::dlg_dashcounter_details_stt::DlgDashCounterDetails,
     // pub dlg_mobile_list: crate::dlg_mobile_list_stt::DlgMobileList,
 
-    // Installation status (desktop only)
-    #[cfg(not(target_os = "android"))]
-    pub install_status: InstallStatus,
-    #[cfg(not(target_os = "android"))]
-    pub install_dialog_open: bool,
-    #[cfg(not(target_os = "android"))]
-    pub install_message: String,
-
     // Update status (both desktop and Android)
     pub update_status: String,
     pub update_available: bool,
@@ -165,6 +155,10 @@ pub struct DureSijangApp {
     // Desktop-only: egui_webview is not available on Android
     #[cfg(not(target_os = "android"))]
     pub webview_widgets: std::collections::HashMap<egui::Id, egui_webview::EguiWebView>,
+
+    // WebView LRU cache tracking (desktop-only)
+    #[cfg(not(target_os = "android"))]
+    pub webview_last_access: std::collections::HashMap<egui::Id, std::time::SystemTime>,
 
     // Android WebView manager using wry
     #[cfg(target_os = "android")]

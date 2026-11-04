@@ -104,11 +104,17 @@ pub fn get_history(tab_id: i32, limit: i64) -> Result<Vec<BrowsingHistory>> {
 pub fn get_all_history(limit: i64) -> Result<Vec<BrowsingHistory>> {
     let conn = &mut establish_connection();
 
-    browsing_history::table
+    let mut entries = browsing_history::table
         .order(browsing_history::visited_at.desc())
-        .limit(limit)
-        .load::<BrowsingHistory>(conn)
-        .map_err(Into::into)
+        .load::<BrowsingHistory>(conn)?;
+
+    // Deduplicate by URL, keeping latest (first occurrence due to desc sort)
+    let mut seen_urls = std::collections::HashSet::new();
+    entries.retain(|e| seen_urls.insert(e.url.clone()));
+
+    // Already sorted by visited_at desc, just apply limit
+    entries.truncate(limit as usize);
+    Ok(entries)
 }
 
 pub fn clear_history(tab_id: Option<i32>) -> Result<()> {
@@ -147,10 +153,15 @@ pub fn add_bookmark(title: &str, url: &str, store_id: Option<i32>) -> Result<()>
 pub fn get_bookmarks() -> Result<Vec<Bookmark>> {
     let conn = &mut establish_connection();
 
-    bookmarks::table
+    let mut bookmarks = bookmarks::table
         .order(bookmarks::created_at.desc())
-        .load::<Bookmark>(conn)
-        .map_err(Into::into)
+        .load::<Bookmark>(conn)?;
+
+    // Deduplicate by URL, keeping latest (first occurrence due to desc sort)
+    let mut seen_urls = std::collections::HashSet::new();
+    bookmarks.retain(|b| seen_urls.insert(b.url.clone()));
+
+    Ok(bookmarks)
 }
 
 pub fn delete_bookmark(id: i32) -> Result<()> {

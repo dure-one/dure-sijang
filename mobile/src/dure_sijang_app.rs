@@ -22,9 +22,15 @@ use crate::browser_stt::SidebarTab;
 // Maximum number of tabs to prevent memory issues
 const MAX_TABS: usize = 20;
 
-use crate::install;
+// Maximum number of cached webviews (desktop-only, LRU eviction)
+// Keeps memory usage bounded - each webview can use 50-200MB
 #[cfg(not(target_os = "android"))]
-use crate::install_stt::InstallStatus;
+const MAX_CACHED_WEBVIEWS: usize = 10;
+
+// Active tab background alpha for better visibility (lighter than default)
+const ACTIVE_TAB_BG_ALPHA: u8 = 60;
+
+use crate::install;
 
 use eframe::egui::Context;
 use egui_material3::theme::{
@@ -230,14 +236,6 @@ impl Default for DureSijangApp {
             dlg_about: crate::dlg_about_stt::DlgAbout::default(),
             dlg_update: crate::dlg_update_stt::DlgUpdate::default(),
 
-            // Installation status (desktop only)
-            #[cfg(not(target_os = "android"))]
-            install_status: install::check_install(),
-            #[cfg(not(target_os = "android"))]
-            install_dialog_open: false,
-            #[cfg(not(target_os = "android"))]
-            install_message: String::new(),
-
             // Update status (both desktop and Android)
             update_status: String::new(),
             update_available: false,
@@ -252,6 +250,10 @@ impl Default for DureSijangApp {
             // WebView widgets (desktop-only)
             #[cfg(not(target_os = "android"))]
             webview_widgets: HashMap::new(),
+
+            // WebView LRU cache tracking (desktop-only)
+            #[cfg(not(target_os = "android"))]
+            webview_last_access: HashMap::new(),
 
             // Android WebView manager
             #[cfg(target_os = "android")]
@@ -520,11 +522,6 @@ impl DureSijangApp {
         }
         // === About dialog end
 
-        // === Install dialog (desktop only)
-        #[cfg(not(target_os = "android"))]
-        self.show_install_dialog(ui.ctx());
-        // === Install dialog end
-
         // Handle settings button - open settings dialog
         if ui
             .ctx()
@@ -547,8 +544,6 @@ impl DureSijangApp {
             let should_exit = Cell::new(false);
             let open_settings = Cell::new(false);
             let open_about = Cell::new(false);
-            #[cfg(not(target_os = "android"))]
-            let do_install_action = Cell::new(false);
             let settings_text = tr!("settings");
             let about_text = tr!("about");
             let exit_text = tr!("exit");
@@ -563,33 +558,12 @@ impl DureSijangApp {
                 close_menu.set(true);
             });
 
-            // Install/Uninstall menu item (desktop only)
-            #[cfg(not(target_os = "android"))]
-            let install_text = if self.install_status == InstallStatus::Installed {
-                tr!("uninstall")
-            } else {
-                tr!("install")
-            };
-            #[cfg(not(target_os = "android"))]
-            let install_item = self.create_menu_item(&install_text, "install", || {
-                do_install_action.set(true);
-                close_menu.set(true);
-            });
-
             let exit_item = self.create_menu_item(&exit_text, "exit", || {
                 close_menu.set(true);
                 should_exit.set(true);
                 println!("Exit clicked!");
             });
 
-            #[cfg(not(target_os = "android"))]
-            let menu_builder = menu("standard_menu", &mut self.standard_menu_open)
-                .item(settings_item)
-                .item(install_item)
-                .item(about_item)
-                .item(exit_item);
-
-            #[cfg(target_os = "android")]
             let menu_builder = menu("standard_menu", &mut self.standard_menu_open)
                 .item(settings_item)
                 .item(about_item)
@@ -631,11 +605,6 @@ impl DureSijangApp {
                 self.dlg_about.open();
             }
 
-            #[cfg(not(target_os = "android"))]
-            if do_install_action.get() {
-                self.perform_install_action();
-            }
-
             if should_exit.get() {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                 process::exit(1);
@@ -661,59 +630,10 @@ impl DureSijangApp {
 
     /// Perform install or uninstall action based on current status
     #[cfg(not(target_os = "android"))]
-    fn perform_install_action(&mut self) {
-        use crate::install_stt::InstallResult;
-
-        let result = if self.install_status == InstallStatus::Installed {
-            install::do_uninstall()
-        } else {
-            install::do_install()
-        };
-
-        match result {
-            InstallResult::Success(msg) => {
-                self.install_message = msg;
-                // Refresh install status
-                self.install_status = install::check_install();
-            }
-            InstallResult::Error(err) => {
-                self.install_message = format!("Error: {}", err);
-            }
-        }
-        self.install_dialog_open = true;
-    }
-
-    /// Show installation result dialog
+    /// Trigger update check action
     #[cfg(not(target_os = "android"))]
-    fn show_install_dialog(&mut self, ctx: &egui::Context) {
-        if self.install_dialog_open {
-            let title = if self.install_message.starts_with("Error") {
-                tr!("install-error")
-            } else if self.install_status == InstallStatus::Installed {
-                tr!("install-success")
-            } else {
-                tr!("uninstall-success")
-            };
-
-            let mut should_close = false;
-
-            dialog("install_dialog", &title, &mut self.install_dialog_open)
-                .content(|ui| {
-                    ui.label(&self.install_message);
-                    ui.add_space(16.0);
-
-                    ui.horizontal(|ui| {
-                        if ui.add(MaterialButton::filled(tr!("ok"))).clicked() {
-                            should_close = true;
-                        }
-                    });
-                })
-                .show(ctx);
-
-            if should_close {
-                self.install_dialog_open = false;
-            }
-        }
+    fn check_for_update_action(&mut self) {
+        self.check_for_update();
     }
 
     /// Check for updates from GitHub
@@ -722,7 +642,7 @@ impl DureSijangApp {
         self.update_status.clear();
         self.update_available = false;
 
-        match install::check_update() {
+        match install::check_for_updates() {
             Ok(info) => {
                 self.update_checking = false;
                 if info.available {
@@ -750,47 +670,16 @@ impl DureSijangApp {
         }
     }
 
-    /// Perform update
+    /// Perform update - opens browser to download page
     fn perform_update(&mut self) {
-        #[cfg(not(target_os = "android"))]
-        {
-            use crate::install_stt::InstallResult;
-
-            let tmp_dir = if let Some(ref cfg) = self.config {
-                cfg.tmp_dir.clone()
+        // Open browser to download page
+        if !self.dlg_update.download_url.is_empty() {
+            if let Err(e) = webbrowser::open(&self.dlg_update.download_url) {
+                log::error!("Failed to open browser for update download: {}", e);
+                self.update_status = format!("Failed to open browser: {}", e);
             } else {
-                std::path::PathBuf::from("./tmp")
-            };
-
-            match install::do_update(
-                &self.dlg_update.download_url,
-                &self.dlg_update.latest_version,
-                &tmp_dir,
-            ) {
-                InstallResult::Success(msg) => {
-                    self.install_message = msg;
-                    self.update_available = false;
-                    self.update_status.clear();
-                    self.dlg_update.close();
-                }
-                InstallResult::Error(err) => {
-                    self.install_message = format!("Error: {}", err);
-                }
-            }
-            self.install_dialog_open = true;
-        }
-
-        #[cfg(target_os = "android")]
-        {
-            // On Android, open browser to download page
-            if !self.dlg_update.download_url.is_empty() {
-                if let Err(e) = webbrowser::open(&self.dlg_update.download_url) {
-                    log::error!("Failed to open browser for update download: {}", e);
-                    self.update_status = format!("Failed to open browser: {}", e);
-                } else {
-                    log::error!("Opened browser for update download");
-                    self.dlg_update.close();
-                }
+                log::info!("Opened browser for update download");
+                self.dlg_update.close();
             }
         }
     }
@@ -1096,6 +985,29 @@ impl DureSijangApp {
         }
     }
 
+    /// Evict least recently used webview from cache (desktop-only)
+    ///
+    /// Mirrors AndroidWebViewManager::evict_lru() pattern
+    #[cfg(not(target_os = "android"))]
+    fn evict_lru_webview(&mut self) {
+        if self.webview_last_access.is_empty() {
+            return;
+        }
+
+        // Find LRU tab ID
+        let lru_tab_id = self.webview_last_access
+            .iter()
+            .min_by_key(|(_, time)| *time)
+            .map(|(id, _)| *id);
+
+        if let Some(tab_id) = lru_tab_id {
+            log::info!("Evicting LRU webview {:?} (cache size: {})",
+                       tab_id, self.webview_widgets.len());
+            self.webview_widgets.remove(&tab_id);
+            self.webview_last_access.remove(&tab_id);
+        }
+    }
+
     // ===== Browser UI Methods (MVVM Browser Integration) =====
 
     /// Add a new browser tab (desktop-only)
@@ -1137,15 +1049,22 @@ impl DureSijangApp {
         // Create tab metadata
         let tab_id = self.browser_state.add_tab(url, url);
 
+        // Check cache size and evict LRU if needed
+        if self.webview_widgets.len() >= MAX_CACHED_WEBVIEWS {
+            self.evict_lru_webview();
+        }
+
         // Create EguiWebView widget
         use egui_webview::EguiWebView;
         let view = EguiWebView::new(ctx, tab_id, frame, |builder| {
             builder.with_url(url)
         });
 
-        // Store webview in HashMap
+        // Store webview in HashMap and track access time
         self.webview_widgets.insert(tab_id, view);
-        log::error!("Added browser tab {:?} with URL: {}", tab_id, url);
+        self.webview_last_access.insert(tab_id, std::time::SystemTime::now());
+        log::error!("Added browser tab {:?} with URL: {} (cache size: {})",
+                   tab_id, url, self.webview_widgets.len());
     }
 
     /// Add a new browser tab (Android - uses Activity Embedding)
@@ -1193,10 +1112,11 @@ impl DureSijangApp {
 
         let tab_id = self.browser_state.tabs[idx].id;
 
-        // Remove webview widget before removing tab metadata (desktop-only)
+        // Remove webview widget and last access tracking (desktop-only)
         #[cfg(not(target_os = "android"))]
         {
             if let Some(_view) = self.webview_widgets.remove(&tab_id) {
+                self.webview_last_access.remove(&tab_id);
                 log::error!("Destroyed webview for tab {:?}", tab_id);
                 // Drop will handle cleanup
             }
@@ -1301,6 +1221,37 @@ impl DureSijangApp {
 
         #[cfg(target_os = "android")]
         false
+    }
+
+    /// Render the menu content in the sidebar
+    fn render_menu_content(app: &mut DureSijangApp, ui: &mut egui::Ui) {
+        ui.vertical(|ui| {
+            // Settings button
+            if ui.button("⚙ Settings").clicked() {
+                app.dlg_settings.open();
+            }
+
+            // Check for Updates button (desktop only)
+            #[cfg(not(target_os = "android"))]
+            {
+                if ui.button("🔄 Check for Updates").clicked() {
+                    app.check_for_update_action();
+                }
+            }
+
+            // About button
+            if ui.button("ℹ About").clicked() {
+                app.dlg_about.open();
+            }
+
+            ui.separator();
+
+            // Exit button
+            if ui.button("🚪 Exit").clicked() {
+                ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                process::exit(1);
+            }
+        });
     }
 
     /// Render the bookmarks list in the sidebar
@@ -1411,26 +1362,63 @@ impl DureSijangApp {
             ui.add_space(30.0);
         }
 
-        // 1. Left Sidebar Panel (collapsible, resizable)
-        if is_desktop && self.browser_state.sidebar_open {
+        // 1. Left Sidebar (Menu | Bookmarks | History)
+        if self.browser_state.sidebar_open {
             SidePanel::left("browser_sidebar")
-                .resizable(true)
+                .resizable(is_desktop)
                 .default_width(200.0)
                 .show_separator_line(true)
                 .show_inside(ui, |ui| {
-                    // Material Design tab switcher
+                    // Tab switcher: Menu | Bookmarks | History
                     ui.horizontal(|ui| {
-                        if ui.selectable_label(
-                            self.browser_state.sidebar_tab == SidebarTab::Bookmarks,
-                            "📚 Bookmarks"
-                        ).clicked() {
+                        // Menu tab
+                        let is_menu_active = self.browser_state.sidebar_tab == SidebarTab::Menu;
+                        let mut menu_button = egui::Button::new("☰ Menu");
+                        if is_menu_active {
+                            let base_color = ui.style().visuals.widgets.inactive.bg_fill;
+                            let active_color = egui::Color32::from_rgba_premultiplied(
+                                base_color.r(),
+                                base_color.g(),
+                                base_color.b(),
+                                ACTIVE_TAB_BG_ALPHA,
+                            );
+                            menu_button = menu_button.fill(active_color);
+                        }
+                        if ui.add(menu_button).clicked() {
+                            self.browser_state.sidebar_tab = SidebarTab::Menu;
+                        }
+
+                        // Bookmarks tab
+                        let is_bookmarks_active = self.browser_state.sidebar_tab == SidebarTab::Bookmarks;
+                        let mut bookmarks_button = egui::Button::new("📚 Bookmarks");
+                        if is_bookmarks_active {
+                            let base_color = ui.style().visuals.widgets.inactive.bg_fill;
+                            let active_color = egui::Color32::from_rgba_premultiplied(
+                                base_color.r(),
+                                base_color.g(),
+                                base_color.b(),
+                                ACTIVE_TAB_BG_ALPHA,
+                            );
+                            bookmarks_button = bookmarks_button.fill(active_color);
+                        }
+                        if ui.add(bookmarks_button).clicked() {
                             self.browser_state.sidebar_tab = SidebarTab::Bookmarks;
                         }
 
-                        if ui.selectable_label(
-                            self.browser_state.sidebar_tab == SidebarTab::History,
-                            "🕒 History"
-                        ).clicked() {
+                        // History tab
+                        let is_history_active = self.browser_state.sidebar_tab == SidebarTab::History;
+                        let mut history_button = egui::Button::new("🕒 History");
+                        if is_history_active {
+                            let base_color = ui.style().visuals.widgets.inactive.bg_fill;
+                            let active_color = egui::Color32::from_rgba_premultiplied(
+                                base_color.r(),
+                                base_color.g(),
+                                base_color.b(),
+                                ACTIVE_TAB_BG_ALPHA,
+                            );
+                            history_button = history_button.fill(active_color);
+                        }
+                        if ui.add(history_button).clicked() {
                             self.browser_state.sidebar_tab = SidebarTab::History;
                         }
                     });
@@ -1438,6 +1426,7 @@ impl DureSijangApp {
 
                     // Content area based on active tab
                     match self.browser_state.sidebar_tab {
+                        SidebarTab::Menu => Self::render_menu_content(self, ui),
                         SidebarTab::Bookmarks => Self::render_bookmarks_list(self, ui, frame),
                         SidebarTab::History => Self::render_history_list(self, ui, frame),
                     }
@@ -1455,9 +1444,21 @@ impl DureSijangApp {
                         let display_title = Self::strip_protocol(&tab.title);
                         let is_active = self.browser_state.active_tab_index == Some(idx);
 
-                        if ui
-                            .selectable_label(is_active, display_title)
-                            .clicked()
+                        // Custom tab styling with lighter background for active tab
+                        let mut tab_button = egui::Button::new(display_title);
+                        if is_active {
+                            // Lighter background for better visibility
+                            let base_color = ui.style().visuals.widgets.inactive.bg_fill;
+                            let active_color = egui::Color32::from_rgba_premultiplied(
+                                base_color.r(),
+                                base_color.g(),
+                                base_color.b(),
+                                ACTIVE_TAB_BG_ALPHA,
+                            );
+                            tab_button = tab_button.fill(active_color);
+                        }
+
+                        if ui.add(tab_button).clicked()
                         {
                             log::error!("Switching active tab from {:?} to {}",
                                         self.browser_state.active_tab_index, idx);
@@ -1487,21 +1488,25 @@ impl DureSijangApp {
                                 }
                             }
 
-                            // Desktop: Destroy old webview, new one created on-demand (mirrors Android pattern)
+                            // Desktop: Destroy old webview (native windows can't be hidden)
                             #[cfg(not(target_os = "android"))]
                             {
+                                // Destroy previous active webview if different tab
                                 if let Some(prev_idx) = self.browser_state.active_tab_index {
-                                    if prev_idx != idx {
+                                    if prev_idx != idx && prev_idx < self.browser_state.tabs.len() {
                                         let prev_tab_id = self.browser_state.tabs[prev_idx].id;
                                         if self.webview_widgets.remove(&prev_tab_id).is_some() {
+                                            self.webview_last_access.remove(&prev_tab_id);
                                             log::info!("Destroyed webview for tab {} on switch", prev_idx);
                                         }
                                     }
                                 }
+                                log::info!("Switched to tab {} (webview will be created on-demand)", idx);
                             }
 
                             self.browser_state.active_tab_index = Some(idx);
-                            self.browser_state.url_input = tab.url_bar.clone();
+                            // Use the clicked tab's URL, not the iterator's current tab
+                            self.browser_state.url_input = self.browser_state.tabs[idx].url_bar.clone();
                         }
 
                         // Close button
@@ -1534,24 +1539,12 @@ impl DureSijangApp {
         // 3. Top Toolbar Panel (navigation controls)
         TopBottomPanel::top("browser_toolbar").show_inside(ui, |ui| {
             ui.horizontal(|ui| {
-                // Hamburger menu (moved from top app bar)
+                // Hamburger menu button - toggles sidebar
                 let items_button = ui.add(
                     MaterialButton::filled(&crate::material_symbol_icons::icon_text("menu"))
                         .small()
                 );
-                self.items_button_rect = Some(items_button.rect);
                 if items_button.clicked() {
-                    self.standard_menu_open = !self.standard_menu_open;
-                }
-                self.show_menus(ui.ctx());
-
-                // Sidebar toggle
-                let sidebar_icon = if self.browser_state.sidebar_open {
-                    crate::material_symbol_icons::icon_text("chevron_left")
-                } else {
-                    crate::material_symbol_icons::icon_text("chevron_right")
-                };
-                if ui.add(MaterialButton::filled(&sidebar_icon).small()).clicked() {
                     self.browser_state.sidebar_open = !self.browser_state.sidebar_open;
                 }
 
@@ -1617,8 +1610,13 @@ impl DureSijangApp {
                 // Handle Enter key to navigate (works when TextEdit has focus OR when it just lost focus)
                 let enter_pressed = response.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
                 if (response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter))) || enter_pressed {
-                    if let Some(idx) = self.browser_state.active_tab_index {
-                        let url = Self::ensure_protocol(&self.browser_state.url_input);
+                    let url = Self::ensure_protocol(&self.browser_state.url_input);
+
+                    // If no tabs exist, create a new tab
+                    if self.browser_state.tabs.is_empty() {
+                        self.add_browser_tab(ui.ctx(), frame, &url);
+                        log::info!("Created new tab for URL: {}", url);
+                    } else if let Some(idx) = self.browser_state.active_tab_index {
                         // Update metadata
                         self.browser_state.update_tab_url(idx, &url, None);
                         // Update URL input to show full URL
@@ -1683,8 +1681,17 @@ impl DureSijangApp {
                     }
                 }
 
-                // Bookmark button
-                let bookmark_icon = crate::material_symbol_icons::icon_text("bookmark");
+                // Bookmark button - toggle bookmark for active tab
+                let is_bookmarked = if let Some(idx) = self.browser_state.active_tab_index {
+                    self.browser_state.is_bookmarked(&self.browser_state.tabs[idx].url_bar)
+                } else {
+                    false
+                };
+                let bookmark_icon = if is_bookmarked {
+                    crate::material_symbol_icons::icon_text("bookmark")
+                } else {
+                    crate::material_symbol_icons::icon_text("bookmark_border")
+                };
                 if ui.add(MaterialButton::filled(&bookmark_icon).small()).clicked() {
                     if let Some(idx) = self.browser_state.active_tab_index {
                         let title = self.browser_state.tabs[idx].title.clone();
@@ -1695,29 +1702,7 @@ impl DureSijangApp {
             });
         });
 
-        // 4. TOP Bookmark/history panel for mobile (Android) - moved from sidebar to top toolbar
-        if !is_desktop && self.browser_state.sidebar_open {
-            TopBottomPanel::top("mobile_bookmark_history_panel").show_inside(ui, |ui| {
-                ui.horizontal(|ui| {        
-                    if ui.selectable_label(
-                        self.browser_state.sidebar_tab == SidebarTab::Bookmarks,
-                        "📚 Bookmarks"
-                    ).clicked() {
-                        self.browser_state.sidebar_tab = SidebarTab::Bookmarks;
-                    }
-
-                    if ui.selectable_label(
-                        self.browser_state.sidebar_tab == SidebarTab::History,
-                        "🕒 History"
-                    ).clicked() {
-                        self.browser_state.sidebar_tab = SidebarTab::History;
-                    }
-                });
-                ui.separator();
-            }); // End of TopBottomPanel::top
-        } 
-
-        // 5. Central Panel (tabs + browser content)
+        // 4. Central Panel (tabs + browser content)
         CentralPanel::default().show_inside(ui, |ui| {
             if self.browser_state.tabs.is_empty() {
                 // Empty state
@@ -1740,25 +1725,47 @@ impl DureSijangApp {
                 // Browser content area - single active webview (desktop-only, mirrors Android pattern)
                 #[cfg(not(target_os = "android"))]
                 {
-                    // Only render active tab's webview
-                    if let Some(active_idx) = self.browser_state.active_tab_index {
-                        let tab = &self.browser_state.tabs[active_idx];
+                    // Hide webview when dialogs are open (native webview covers dialog windows)
+                    let dialog_open = self.dlg_settings.open
+                        || self.dlg_about.open
+                        || self.dlg_update.open;
+
+                    if dialog_open {
+                        // Show placeholder when dialog is open
+                        ui.centered_and_justified(|ui| {
+                            ui.label("Dialog open - webview hidden");
+                        });
+                    } else if let Some(active_idx) = self.browser_state.active_tab_index {
+                        let active_tab_id = self.browser_state.tabs[active_idx].id;
+                        let active_tab_url = self.browser_state.tabs[active_idx].url_bar.clone();
 
                         // Create webview if doesn't exist for active tab
-                        if !self.webview_widgets.contains_key(&tab.id) {
+                        if !self.webview_widgets.contains_key(&active_tab_id) {
+                            // Check cache size and evict LRU if needed
+                            if self.webview_widgets.len() >= MAX_CACHED_WEBVIEWS {
+                                self.evict_lru_webview();
+                            }
+
                             use egui_webview::EguiWebView;
-                            let view = EguiWebView::new(ui.ctx(), tab.id, frame, |builder| {
-                                builder.with_url(&tab.url_bar)
+                            let view = EguiWebView::new(ui.ctx(), active_tab_id, frame, |builder| {
+                                builder.with_url(&active_tab_url)
                             });
-                            self.webview_widgets.insert(tab.id, view);
-                            log::info!("Created webview for tab {} on demand", active_idx);
+                            self.webview_widgets.insert(active_tab_id, view);
+                            self.webview_last_access.insert(active_tab_id, std::time::SystemTime::now());
+                            log::info!("Created webview for tab {} on demand (cache size: {})",
+                                      active_idx, self.webview_widgets.len());
                         }
 
-                        // Render only active webview (always visible)
-                        if let Some(view) = self.webview_widgets.get_mut(&tab.id) {
-                            let size = ui.available_size();
+                        // Update last access time for active webview
+                        self.webview_last_access.insert(active_tab_id, std::time::SystemTime::now());
 
-                            ui.push_id(tab.id, |ui| {
+                        // Render ONLY active webview with full size
+                        // Inactive webviews are not rendered (hidden by not calling ui())
+                        if let Some(view) = self.webview_widgets.get_mut(&active_tab_id) {
+                            let size = ui.available_size();
+                            log::trace!("Rendering webview for tab {} (id={:?})", active_idx, active_tab_id);
+
+                            ui.push_id(active_tab_id, |ui| {
                                 let response = view.ui(ui, size);
 
                                 // Handle navigation events
@@ -1774,5 +1781,7 @@ impl DureSijangApp {
                 }
             }
         });
+
+        // Menu is now rendered as left sidebar - no need for popup menu here
     }
 }
