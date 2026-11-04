@@ -906,6 +906,13 @@ impl eframe::App for DureSijangApp {
             self.ui_internal(ui, frame);
         });
 
+        // Hide WebViews when dialogs are open (z-index fix)
+        #[cfg(not(target_os = "android"))]
+        {
+            let any_dialog_open = self.is_any_dialog_open();
+            self.set_webviews_visible(!any_dialog_open);
+        }
+
         // End webview frame (desktop-only)
         #[cfg(not(target_os = "android"))]
         crate::egui_webview::webview_end_frame(ctx);
