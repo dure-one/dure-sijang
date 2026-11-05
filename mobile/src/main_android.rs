@@ -5,8 +5,8 @@
 use android_activity::AndroidApp;
 use eframe::NativeOptions;
 
-use crate::log_capture;
 use crate::dure_sijang_app::{self, DureSijangApp};
+use crate::log_capture;
 use crate::Config;
 
 /// Android entry point

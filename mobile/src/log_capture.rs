@@ -1,5 +1,5 @@
-use std::sync::{Arc, OnceLock, RwLock};
 use chrono::Utc;
+use std::sync::{Arc, OnceLock, RwLock};
 
 /// Format log message with timestamp and level
 fn format_log(level: log::Level, target: &str, message: &str) -> String {

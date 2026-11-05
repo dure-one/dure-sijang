@@ -1,5 +1,7 @@
 app-title = Dure-Sijang
 app-description = Universal Android Debloater using Shizuku.
+bookmarks = Bookmarks
+history = History
 settings = Settings
 exit = Exit
 debloat = Debloat
@@ -249,3 +251,9 @@ about = About
 about-description = Browse multiple mycart stores seamlessly. Dual-mode browsing: WebView for full website rendering or API mode for optimized native UI. Synchronize store directory from dure.one, manage shopping carts, and track browsing history.
 about-website = Website
 about-credits = Credits
+about-docs = Documentation
+about-app-website = App Website
+about-check-update = Check for Updates
+about-version = Version
+url-label = URL
+url-go = Go

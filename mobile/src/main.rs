@@ -5,11 +5,14 @@
 
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
-use eframe::egui::{self, IconData};
 use dure_sijang::dure_sijang_app::{self, DureSijangApp};
+use eframe::egui::{self, IconData};
 
 // GTK is required for wry WebView on Linux/OpenBSD
-#[cfg(all(not(target_arch = "wasm32"), any(target_os = "linux", target_os = "openbsd")))]
+#[cfg(all(
+    not(target_arch = "wasm32"),
+    any(target_os = "linux", target_os = "openbsd")
+))]
 use gtk;
 
 /// Check OpenGL version on Windows and show installation instructions if OpenGL 2.0+ is not available
@@ -233,7 +236,10 @@ fn main() -> eframe::Result<()> {
     };
 
     // Initialize GTK before creating webviews (required for wry on Linux/OpenBSD)
-    #[cfg(all(not(target_arch = "wasm32"), any(target_os = "linux", target_os = "openbsd")))]
+    #[cfg(all(
+        not(target_arch = "wasm32"),
+        any(target_os = "linux", target_os = "openbsd")
+    ))]
     {
         gtk::init().expect("Failed to initialize GTK");
         log::info!("GTK initialized successfully");

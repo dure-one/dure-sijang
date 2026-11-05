@@ -13,19 +13,9 @@ mod android_log;
 mod android_packagemanager;
 mod android_webview;
 
-// Vendored egui_webview for z-index control (desktop-only)
-#[cfg(not(target_os = "android"))]
-pub mod egui_webview;
-
 mod clipboard_popup;
-mod dlg_about;
-pub mod dlg_about_stt;
 mod side_settings;
 pub mod side_settings_stt;
-mod dlg_uninstall_confirm;
-pub mod dlg_uninstall_confirm_stt;
-mod dlg_update;
-pub mod dlg_update_stt;
 
 pub mod db;
 pub mod db_browser;
@@ -36,16 +26,15 @@ mod schema;
 pub mod log_capture;
 
 // Export modules for external use
-pub use dure_sijang_app::{DureSijangApp as GuiApp, View};
 pub use dure_sijang_app::DureSijangApp;
+pub use dure_sijang_app::{DureSijangApp as GuiApp, View};
 
 pub mod material_symbol_icons;
 
-pub mod svg_stt;
+pub mod browser_stt;
 pub mod dure_sijang_app;
 pub mod dure_sijang_app_stt;
-pub mod browser_stt;
-
+pub mod svg_stt;
 
 // Installation management for desktop platforms
 // (check_update function is available on all platforms)

@@ -1,3 +1,8 @@
+#[cfg(target_os = "android")]
+use raw_window_handle::HasWindowHandle;
+use std::collections::HashMap;
+#[cfg(target_os = "android")]
+use std::time::SystemTime;
 /// Android WebView integration using wry
 ///
 /// This module provides WebView functionality on Android using the wry crate.
@@ -5,12 +10,7 @@
 /// Activity Embedding split-screen support.
 
 #[cfg(target_os = "android")]
-use wry::{WebViewBuilder, WebView};
-#[cfg(target_os = "android")]
-use raw_window_handle::HasWindowHandle;
-use std::collections::HashMap;
-#[cfg(target_os = "android")]
-use std::time::SystemTime;
+use wry::{WebView, WebViewBuilder};
 
 /// Manages WebView instances on Android with LRU caching
 #[cfg(target_os = "android")]
@@ -67,8 +67,11 @@ impl AndroidWebViewManager {
             .with_accept_first_mouse(true)
             .build_as_child(window)?;
 
-        log::info!("Created new wry WebView for tab {} (cache size: {})",
-                   tab_id, self.webviews.len() + 1);
+        log::info!(
+            "Created new wry WebView for tab {} (cache size: {})",
+            tab_id,
+            self.webviews.len() + 1
+        );
 
         // Cache the WebView
         self.webviews.insert(tab_id, webview);
@@ -80,7 +83,11 @@ impl AndroidWebViewManager {
 
     /// Switch to a different tab's WebView
     pub fn switch_to_webview(&mut self, tab_id: i32) -> anyhow::Result<&WebView> {
-        log::info!("switch_to_webview: from {:?} to {}", self.active_webview, tab_id);
+        log::info!(
+            "switch_to_webview: from {:?} to {}",
+            self.active_webview,
+            tab_id
+        );
 
         if !self.webviews.contains_key(&tab_id) {
             anyhow::bail!("No cached wry WebView for tab {}", tab_id);
@@ -99,8 +106,11 @@ impl AndroidWebViewManager {
 
         if let Some(_webview) = self.webviews.remove(&tab_id) {
             self.last_access.remove(&tab_id);
-            log::info!("Removed wry WebView for tab {} (remaining: {})",
-                       tab_id, self.webviews.len());
+            log::info!(
+                "Removed wry WebView for tab {} (remaining: {})",
+                tab_id,
+                self.webviews.len()
+            );
 
             // If this was the active webview, clear it
             if self.active_webview == Some(tab_id) {
@@ -111,7 +121,10 @@ impl AndroidWebViewManager {
 
     /// Clear all cached WebViews
     pub fn clear_cache(&mut self) {
-        log::info!("clear_cache: destroying {} cached wry WebViews", self.webviews.len());
+        log::info!(
+            "clear_cache: destroying {} cached wry WebViews",
+            self.webviews.len()
+        );
 
         self.webviews.clear();
         self.last_access.clear();
@@ -127,7 +140,8 @@ impl AndroidWebViewManager {
         }
 
         // Find LRU tab
-        let lru_tab_id = self.last_access
+        let lru_tab_id = self
+            .last_access
             .iter()
             .min_by_key(|(_, time)| *time)
             .map(|(id, _)| *id);

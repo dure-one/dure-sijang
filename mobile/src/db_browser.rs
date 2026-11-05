@@ -1,9 +1,9 @@
 use crate::db::establish_connection;
 use crate::models::browser::*;
 use crate::schema::*;
-use diesel::prelude::*;
 use anyhow::Result;
 use chrono::Utc;
+use diesel::prelude::*;
 
 // Tab operations
 pub fn create_tab(title: &str, url: &str, mode: &str) -> Result<Tab> {
@@ -47,8 +47,7 @@ pub fn update_tab(id: i32, title: &str, url: &str) -> Result<()> {
 pub fn delete_tab(id: i32) -> Result<()> {
     let conn = &mut establish_connection();
 
-    diesel::delete(tabs::table.filter(tabs::id.eq(id)))
-        .execute(conn)?;
+    diesel::delete(tabs::table.filter(tabs::id.eq(id))).execute(conn)?;
 
     Ok(())
 }
@@ -124,8 +123,7 @@ pub fn clear_history(tab_id: Option<i32>) -> Result<()> {
         diesel::delete(browsing_history::table.filter(browsing_history::tab_id.eq(id)))
             .execute(conn)?;
     } else {
-        diesel::delete(browsing_history::table)
-            .execute(conn)?;
+        diesel::delete(browsing_history::table).execute(conn)?;
     }
 
     Ok(())
@@ -167,8 +165,7 @@ pub fn get_bookmarks() -> Result<Vec<Bookmark>> {
 pub fn delete_bookmark(id: i32) -> Result<()> {
     let conn = &mut establish_connection();
 
-    diesel::delete(bookmarks::table.filter(bookmarks::id.eq(id)))
-        .execute(conn)?;
+    diesel::delete(bookmarks::table.filter(bookmarks::id.eq(id))).execute(conn)?;
 
     Ok(())
 }

@@ -126,14 +126,6 @@ pub struct DureSijangApp {
     // Dialog states
     pub side_settings: crate::side_settings_stt::SideSettings,
 
-    // LEGACY: Deleted for mycart browser project
-    // pub dlg_adb_install: crate::dlg_adb_install_stt::DlgAdbInstall,
-    pub dlg_about: crate::dlg_about_stt::DlgAbout,
-    pub dlg_update: crate::dlg_update_stt::DlgUpdate,
-    // LEGACY: Deleted for mycart browser project
-    // pub dlg_dashcounter_details: crate::dlg_dashcounter_details_stt::DlgDashCounterDetails,
-    // pub dlg_mobile_list: crate::dlg_mobile_list_stt::DlgMobileList,
-
     // Update status (both desktop and Android)
     pub update_status: String,
     pub update_available: bool,
@@ -152,9 +144,9 @@ pub struct DureSijangApp {
     pub zoom_factor: f32,
 
     // WebView widgets (stored separately from BrowserState metadata)
-    // Desktop-only: egui_webview is not available on Android
+    // Desktop-only: egui_webview crate
     #[cfg(not(target_os = "android"))]
-    pub webview_widgets: std::collections::HashMap<egui::Id, crate::egui_webview::EguiWebView>,
+    pub webview_widgets: std::collections::HashMap<egui::Id, egui_webview::EguiWebView>,
 
     // WebView LRU cache tracking (desktop-only)
     #[cfg(not(target_os = "android"))]

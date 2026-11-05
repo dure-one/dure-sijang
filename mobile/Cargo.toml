@@ -61,6 +61,7 @@ crossbeam-queue = "0.3"
 # html2md = "0.2"
 xee-xpath = "0.1.5"
 webbrowser = "1.1"
+egui_markdown = "0.1"
 # webview dependencies (conditional - see platform-specific sections below)
 # wry and egui_webview are desktop-only to avoid android-activity conflicts
 # On Android, eframe owns the NativeActivity
@@ -134,7 +135,7 @@ trash = "5.2"
 wry = "0.56"
 http = "1"
 raw-window-handle = "0.6"
-# egui_webview vendored in src/egui_webview/ for z-index control
+egui_webview = { git = "https://github.com/nikescar/egui_webview", branch = "fix/nativeactivity-webview-launch" }
 
 # Wasm specific dependencies
 [target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]

@@ -4,7 +4,10 @@
 //! correctly on Linux and OpenBSD platforms. It does not test runtime behavior
 //! since GTK may not be available in CI environments.
 
-#[cfg(all(not(target_arch = "wasm32"), any(target_os = "linux", target_os = "openbsd")))]
+#[cfg(all(
+    not(target_arch = "wasm32"),
+    any(target_os = "linux", target_os = "openbsd")
+))]
 #[test]
 fn test_gtk_init_compiles() {
     // This test verifies that:
@@ -22,7 +25,10 @@ fn test_gtk_init_compiles() {
     assert!(true, "GTK init function exists and compiles");
 }
 
-#[cfg(not(all(not(target_arch = "wasm32"), any(target_os = "linux", target_os = "openbsd"))))]
+#[cfg(not(all(
+    not(target_arch = "wasm32"),
+    any(target_os = "linux", target_os = "openbsd")
+)))]
 #[test]
 fn test_gtk_not_required_on_other_platforms() {
     // On non-Linux/OpenBSD platforms (Windows, macOS, Android, WASM),

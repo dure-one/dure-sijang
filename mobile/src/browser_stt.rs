@@ -1,12 +1,12 @@
+use crate::models::browser::{Bookmark, Tab};
 use egui::Id;
-use crate::models::browser::{Tab, Bookmark};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SidebarTab {
-    Menu,
     Bookmarks,
     History,
     Settings,
+    About,
 }
 
 #[derive(Debug, Clone)]
@@ -14,13 +14,13 @@ pub struct BrowserState {
     pub tabs: Vec<WebTab>,
     pub active_tab_index: Option<usize>,
     pub sidebar_open: bool,
-    pub menu_sidebar_open: bool,  // NEW: separate menu sidebar
+    pub menu_sidebar_open: bool, // NEW: separate menu sidebar
     pub url_input: String,
     pub next_tab_id: usize,
     pub bookmarks: Vec<Bookmark>,
     pub sidebar_tab: SidebarTab,
     pub history_entries: Vec<crate::models::browser::BrowsingHistory>,
-    pub resize_toggle_step: u8,  // 0=none, 1=toggled, 2=restore
+    pub resize_toggle_step: u8, // 0=none, 1=toggled, 2=restore
 }
 
 #[derive(Debug, Clone)]
@@ -39,11 +39,11 @@ impl BrowserState {
             tabs: Vec::new(),
             active_tab_index: None,
             sidebar_open: true,
-            menu_sidebar_open: false,  // Menu sidebar starts closed
+            menu_sidebar_open: false, // Menu sidebar starts closed
             url_input: String::new(),
             next_tab_id: 0,
             bookmarks: Vec::new(),
-            sidebar_tab: SidebarTab::Menu,
+            sidebar_tab: SidebarTab::Bookmarks,
             history_entries: Vec::new(),
             resize_toggle_step: 0,
         }
@@ -74,7 +74,7 @@ impl BrowserState {
                 }
             }
         }
-        true  // Default to new tab if can't determine
+        true // Default to new tab if can't determine
     }
 
     pub fn load_from_db() -> Self {
@@ -103,7 +103,7 @@ impl BrowserState {
             state.bookmarks = bookmarks;
         }
 
-        state.sidebar_tab = SidebarTab::Menu;
+        state.sidebar_tab = SidebarTab::Bookmarks;
         state.load_history();
 
         state
@@ -173,11 +173,7 @@ impl BrowserState {
 
         // Update database
         if let Some(db_id) = self.tabs[idx].db_id {
-            let _ = crate::db_browser::update_tab(
-                db_id,
-                &self.tabs[idx].title,
-                url,
-            );
+            let _ = crate::db_browser::update_tab(db_id, &self.tabs[idx].title, url);
 
             // Add to history
             let _ = crate::db_browser::add_history(db_id, url, title);
@@ -190,6 +186,10 @@ impl BrowserState {
     }
 
     pub fn add_bookmark(&mut self, title: &str, url: &str) -> anyhow::Result<()> {
+        // Prevent duplicate bookmarks
+        if self.is_bookmarked(url) {
+            return Ok(());
+        }
         crate::db_browser::add_bookmark(title, url, None)?;
         self.bookmarks = crate::db_browser::get_bookmarks()?;
         Ok(())
@@ -215,8 +215,11 @@ impl BrowserState {
     /// Force webview resize by toggling sidebar state over two frames
     /// This triggers egui layout recalculation
     pub fn force_sidebar_resize(&mut self) {
-        log::info!("Scheduling sidebar resize toggle (current state: {})", self.sidebar_open);
-        self.resize_toggle_step = 1;  // Start toggle cycle
+        log::info!(
+            "Scheduling sidebar resize toggle (current state: {})",
+            self.sidebar_open
+        );
+        self.resize_toggle_step = 1; // Start toggle cycle
     }
 
     /// Process resize toggle if pending (call each frame)
@@ -232,9 +235,9 @@ impl BrowserState {
                 // Step 2: Restore to original state
                 self.sidebar_open = !self.sidebar_open;
                 log::info!("Resize toggle step 2: restored to {}", self.sidebar_open);
-                self.resize_toggle_step = 0;  // Done
+                self.resize_toggle_step = 0; // Done
             }
-            _ => {}  // No toggle pending
+            _ => {} // No toggle pending
         }
     }
 

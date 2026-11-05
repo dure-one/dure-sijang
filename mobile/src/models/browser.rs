@@ -1,7 +1,7 @@
-use super::super::schema::{tabs, browsing_history, bookmarks};
-use diesel::prelude::*;
-use serde::{Serialize, Deserialize};
+use super::super::schema::{bookmarks, browsing_history, tabs};
 use chrono::NaiveDateTime;
+use diesel::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Queryable, Selectable, Serialize, Deserialize, Clone, Debug)]
 #[diesel(table_name = tabs)]

@@ -13,7 +13,10 @@ const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Check for updates from GitHub releases
 pub fn check_for_updates() -> Result<UpdateInfo, String> {
-    let api_url = format!("https://api.github.com/repos/{}/releases/latest", GITHUB_REPO);
+    let api_url = format!(
+        "https://api.github.com/repos/{}/releases/latest",
+        GITHUB_REPO
+    );
 
     log::info!("Checking for updates from: {}", api_url);
 
@@ -60,7 +63,12 @@ fn find_download_url_for_platform(assets: &[crate::install_stt::GitHubAsset]) ->
     let platform_keywords = vec!["linux", "x86_64-unknown-linux"];
 
     #[cfg(target_os = "macos")]
-    let platform_keywords = vec!["macos", "darwin", "x86_64-apple-darwin", "aarch64-apple-darwin"];
+    let platform_keywords = vec![
+        "macos",
+        "darwin",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+    ];
 
     #[cfg(not(any(target_os = "windows", target_os = "linux", target_os = "macos")))]
     let platform_keywords: Vec<&str> = vec![];

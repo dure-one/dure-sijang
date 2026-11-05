@@ -83,10 +83,14 @@ pub fn establish_connection() -> SqliteConnection {
     conn
 }
 
-pub fn establish_connection_at(db_path: std::path::PathBuf) -> Result<SqliteConnection, anyhow::Error> {
+pub fn establish_connection_at(
+    db_path: std::path::PathBuf,
+) -> Result<SqliteConnection, anyhow::Error> {
     let (vfs, _once) = &*VFS.lock().unwrap();
 
-    let base_path = db_path.to_str().ok_or_else(|| anyhow::anyhow!("Invalid database path"))?;
+    let base_path = db_path
+        .to_str()
+        .ok_or_else(|| anyhow::anyhow!("Invalid database path"))?;
 
     let url = match vfs {
         0 => base_path.to_string(),

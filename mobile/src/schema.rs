@@ -101,12 +101,10 @@ diesel::joinable!(browsing_history -> tabs (tab_id));
 diesel::joinable!(tabs -> store_directory (store_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    
     bookmarks,
     browsing_history,
     cached_carts,
     cached_products,
-    
     posts,
     store_directory,
     tabs,
