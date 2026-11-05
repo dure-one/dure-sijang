@@ -231,7 +231,7 @@ impl Default for DureSijangApp {
             settings: settings.clone(),
 
             // Dialog states
-            dlg_settings: Default::default(),
+            side_settings: Default::default(),
 
             dlg_about: crate::dlg_about_stt::DlgAbout::default(),
             dlg_update: crate::dlg_update_stt::DlgUpdate::default(),
@@ -481,14 +481,12 @@ impl DureSijangApp {
         }
         // === logs area end
 
-        // === settings dialog
-        self.dlg_settings.show(ui.ctx(), &mut self.settings);
-        // Handle save and theme changes from settings dialog
-        if self.dlg_settings.save_clicked {
-            self.dlg_settings.save_clicked = false; // Reset flag to prevent repeated saves
+        // Handle save and theme changes from settings sidebar
+        if self.side_settings.save_clicked {
+            self.side_settings.save_clicked = false; // Reset flag to prevent repeated saves
             self.save_settings();
         }
-        if let Some(theme_name) = self.dlg_settings.theme_to_apply.take() {
+        if let Some(theme_name) = self.side_settings.theme_to_apply.take() {
             if theme_name == "default" {
                 setup_local_theme(Some("resources/material-theme.json"));
                 load_themes();
@@ -521,20 +519,6 @@ impl DureSijangApp {
             self.perform_update();
         }
         // === About dialog end
-
-        // Handle settings button - open settings dialog
-        if ui
-            .ctx()
-            .data(|data| data.get_temp::<bool>(egui::Id::new("settings_button_clicked")))
-            .unwrap_or(false)
-        {
-            ui.ctx().data_mut(|data| {
-                data.remove::<bool>(egui::Id::new("settings_button_clicked"));
-            });
-
-            // Open settings dialog
-            self.dlg_settings.open();
-        }
     }
 
     fn show_menus(&mut self, ctx: &egui::Context) {
@@ -548,7 +532,7 @@ impl DureSijangApp {
             let about_text = tr!("about");
             let exit_text = tr!("exit");
             let settings_item = self.create_menu_item(&settings_text, "settings", || {
-                println!("Settings clicked!");
+                println!("Settings clicked - switching to Settings sidebar tab");
                 open_settings.set(true);
                 close_menu.set(true);
             });
@@ -597,8 +581,9 @@ impl DureSijangApp {
             }
 
             if open_settings.get() {
-                // Open settings dialog
-                self.dlg_settings.open();
+                // Switch to Settings sidebar tab
+                self.browser_state.sidebar_tab = SidebarTab::Settings;
+                self.browser_state.sidebar_open = true;
             }
 
             if open_about.get() {
@@ -923,7 +908,7 @@ impl eframe::App for DureSijangApp {
 impl DureSijangApp {
     /// Check if any dialog is currently open
     fn is_any_dialog_open(&self) -> bool {
-        self.dlg_settings.open || self.dlg_update.open || self.dlg_about.open
+        self.dlg_update.open || self.dlg_about.open
     }
 
     /// Set visibility for all WebViews (desktop-only z-index control)
@@ -1156,6 +1141,15 @@ impl DureSijangApp {
         // Remove tab metadata
         self.browser_state.close_tab(idx);
 
+        // If no tabs left, clear all cached webviews (desktop-only)
+        #[cfg(not(target_os = "android"))]
+        if self.browser_state.tabs.is_empty() {
+            let count = self.webview_widgets.len();
+            self.webview_widgets.clear();
+            self.webview_last_access.clear();
+            log::error!("Last tab closed - cleared all {} cached webviews", count);
+        }
+
         // Calculate new active tab if we closed the active one
         if self.browser_state.active_tab_index == Some(idx) {
             let new_active = if idx > 0 {
@@ -1249,11 +1243,6 @@ impl DureSijangApp {
     /// Render the menu content in the sidebar
     fn render_menu_content(app: &mut DureSijangApp, ui: &mut egui::Ui) {
         ui.vertical(|ui| {
-            // Settings button
-            if ui.button("⚙ Settings").clicked() {
-                app.dlg_settings.open();
-            }
-
             // Check for Updates button (desktop only)
             #[cfg(not(target_os = "android"))]
             {
@@ -1275,6 +1264,11 @@ impl DureSijangApp {
                 process::exit(1);
             }
         });
+    }
+
+    /// Render the settings UI in the sidebar
+    fn render_settings_content(app: &mut DureSijangApp, ui: &mut egui::Ui) {
+        app.side_settings.render_ui(ui, &mut app.settings);
     }
 
     /// Render the bookmarks list in the sidebar
@@ -1369,6 +1363,9 @@ impl DureSijangApp {
     pub fn render_browser_ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         use egui::{CentralPanel, SidePanel, TopBottomPanel, ScrollArea, TextEdit};
 
+        // Process pending resize toggle (must happen before rendering sidebar)
+        self.browser_state.process_resize_toggle();
+
         let is_desktop = ui.available_width() > crate::DESKTOP_MIN_WIDTH;
 
         if let Some(idx) = self.browser_state.active_tab_index {
@@ -1444,6 +1441,23 @@ impl DureSijangApp {
                         if ui.add(history_button).clicked() {
                             self.browser_state.sidebar_tab = SidebarTab::History;
                         }
+
+                        // Settings tab
+                        let is_settings_active = self.browser_state.sidebar_tab == SidebarTab::Settings;
+                        let mut settings_button = egui::Button::new("⚙ Settings");
+                        if is_settings_active {
+                            let base_color = ui.style().visuals.widgets.inactive.bg_fill;
+                            let active_color = egui::Color32::from_rgba_premultiplied(
+                                base_color.r(),
+                                base_color.g(),
+                                base_color.b(),
+                                ACTIVE_TAB_BG_ALPHA,
+                            );
+                            settings_button = settings_button.fill(active_color);
+                        }
+                        if ui.add(settings_button).clicked() {
+                            self.browser_state.sidebar_tab = SidebarTab::Settings;
+                        }
                     });
                     ui.separator();
 
@@ -1452,6 +1466,7 @@ impl DureSijangApp {
                         SidebarTab::Menu => Self::render_menu_content(self, ui),
                         SidebarTab::Bookmarks => Self::render_bookmarks_list(self, ui, frame),
                         SidebarTab::History => Self::render_history_list(self, ui, frame),
+                        SidebarTab::Settings => Self::render_settings_content(self, ui),
                     }
                 });
         }
@@ -1568,7 +1583,7 @@ impl DureSijangApp {
                         .small()
                 );
                 if items_button.clicked() {
-                    self.browser_state.sidebar_open = !self.browser_state.sidebar_open;
+                    self.browser_state.toggle_sidebar();
                 }
 
                 // Back button
@@ -1749,8 +1764,7 @@ impl DureSijangApp {
                 #[cfg(not(target_os = "android"))]
                 {
                     // Hide webview when dialogs are open (native webview covers dialog windows)
-                    let dialog_open = self.dlg_settings.open
-                        || self.dlg_about.open
+                    let dialog_open = self.dlg_about.open
                         || self.dlg_update.open;
 
                     if dialog_open {
@@ -1782,11 +1796,18 @@ impl DureSijangApp {
                         // Update last access time for active webview
                         self.webview_last_access.insert(active_tab_id, std::time::SystemTime::now());
 
-                        // Render ONLY active webview with full size
+                        // Render ONLY active webview with size adjusted for log panel
                         // Inactive webviews are not rendered (hidden by not calling ui())
                         if let Some(view) = self.webview_widgets.get_mut(&active_tab_id) {
-                            let size = ui.available_size();
-                            log::trace!("Rendering webview for tab {} (id={:?})", active_idx, active_tab_id);
+                            let mut size = ui.available_size();
+
+                            // Reserve space for log panel when enabled (200px total: label + 150px scroll area + padding)
+                            if self.settings.show_logs {
+                                size.y = (size.y - 200.0).max(0.0);
+                            }
+
+                            log::trace!("Rendering webview for tab {} (id={:?}), size={:?}, show_logs={}",
+                                       active_idx, active_tab_id, size, self.settings.show_logs);
 
                             ui.push_id(active_tab_id, |ui| {
                                 let response = view.ui(ui, size);

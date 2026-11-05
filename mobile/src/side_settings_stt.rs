@@ -1,5 +1,4 @@
-pub struct DlgSettings {
-    pub open: bool,
+pub struct SideSettings {
     // Font selector state
     pub selected_font_display: String,
     pub system_fonts: Vec<(String, String)>,
@@ -9,10 +8,9 @@ pub struct DlgSettings {
     pub theme_to_apply: Option<String>,
 }
 
-impl Default for DlgSettings {
+impl Default for SideSettings {
     fn default() -> Self {
         Self {
-            open: false,
             selected_font_display: "Default (NotoSansKr)".to_string(),
             system_fonts: Vec::new(),
             system_fonts_loaded: false,

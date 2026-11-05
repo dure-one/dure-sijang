@@ -124,7 +124,7 @@ pub struct DureSijangApp {
     pub settings: Settings,
 
     // Dialog states
-    pub dlg_settings: crate::dlg_settings_stt::DlgSettings,
+    pub side_settings: crate::side_settings_stt::SideSettings,
 
     // LEGACY: Deleted for mycart browser project
     // pub dlg_adb_install: crate::dlg_adb_install_stt::DlgAdbInstall,

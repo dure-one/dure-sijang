@@ -47,6 +47,7 @@ pub struct EguiWebView {
     #[allow(dead_code)]
     context: Context,
     last_bounds: Option<wry::Rect>,
+    is_visible: bool,
 }
 
 // Android version uses JNI WebView
@@ -57,6 +58,7 @@ pub struct EguiWebView {
     events: Arc<Mutex<VecDeque<WebViewEvent>>>,
     #[allow(dead_code)]
     context: Context,
+    is_visible: bool,
 }
 
 impl Debug for EguiWebView {
@@ -180,8 +182,8 @@ impl EguiWebView {
 
         *view_ref.lock().unwrap() = Some(web_view.clone());
 
-        // Set visible once - never toggle visibility for performance
-        web_view.set_visible(true).ok();
+        // Start hidden - will be shown after first bounds set in ui()
+        web_view.set_visible(false).ok();
 
         ctx.data_mut(|data| {
             let state = data.get_temp_mut_or_insert_with::<GlobalWebViewState>(
@@ -197,6 +199,7 @@ impl EguiWebView {
             id,
             context: ctx.clone(),
             last_bounds: None,
+            is_visible: false,
         }
     }
 
@@ -262,8 +265,8 @@ impl EguiWebView {
 
         *view_ref.lock().unwrap() = Some(web_view.clone());
 
-        // Set visible once - never toggle visibility for performance
-        web_view.set_visible(true).ok();
+        // Start hidden - will be shown after first bounds set in ui()
+        web_view.set_visible(false).ok();
 
         ctx.data_mut(|data| {
             let state = data.get_temp_mut_or_insert_with::<GlobalWebViewState>(
@@ -279,6 +282,7 @@ impl EguiWebView {
             id,
             context: ctx.clone(),
             last_bounds: None,
+            is_visible: false,
         }
     }
 
@@ -306,6 +310,9 @@ impl EguiWebView {
                 .expect("Failed to create Android WebView")
         );
 
+        // Start hidden - will be shown after first bounds set in ui()
+        web_view.set_visible(false).ok();
+
         ctx.data_mut(|data| {
             let state = data.get_temp_mut_or_insert_with::<GlobalWebViewState>(
                 Id::new(WEBVIEW_ID),
@@ -319,6 +326,7 @@ impl EguiWebView {
             view: web_view,
             id,
             context: ctx.clone(),
+            is_visible: false,
         }
     }
 
@@ -447,6 +455,16 @@ impl EguiWebView {
             if bounds_changed {
                 self.view.set_bounds(new_bounds).ok();
                 self.last_bounds = Some(new_bounds);
+                log::trace!("Updated webview bounds: pos=({},{}) size={}x{}",
+                           physical_rect.min.x as i32, physical_rect.min.y as i32,
+                           physical_rect.width() as u32, physical_rect.height() as u32);
+
+                // Make visible after first bounds set (prevents small square flash)
+                if !self.is_visible {
+                    self.view.set_visible(true).ok();
+                    self.is_visible = true;
+                    log::error!("WebView made visible after first bounds set");
+                }
             }
         }
 
@@ -454,7 +472,11 @@ impl EguiWebView {
         #[cfg(target_os = "android")]
         {
             // Android WebView bounds are managed by the view hierarchy
-            // No need to manually set bounds here
+            // Make visible on first ui() call
+            if !self.is_visible {
+                self.view.set_visible(true).ok();
+                self.is_visible = true;
+            }
         }
 
         WebViewResponse {

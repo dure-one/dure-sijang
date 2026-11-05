@@ -6,6 +6,7 @@ pub enum SidebarTab {
     Menu,
     Bookmarks,
     History,
+    Settings,
 }
 
 #[derive(Debug, Clone)]
@@ -19,6 +20,7 @@ pub struct BrowserState {
     pub bookmarks: Vec<Bookmark>,
     pub sidebar_tab: SidebarTab,
     pub history_entries: Vec<crate::models::browser::BrowsingHistory>,
+    pub resize_toggle_step: u8,  // 0=none, 1=toggled, 2=restore
 }
 
 #[derive(Debug, Clone)]
@@ -43,6 +45,7 @@ impl BrowserState {
             bookmarks: Vec::new(),
             sidebar_tab: SidebarTab::Menu,
             history_entries: Vec::new(),
+            resize_toggle_step: 0,
         }
     }
 
@@ -207,5 +210,53 @@ impl BrowserState {
 
     pub fn is_bookmarked(&self, url: &str) -> bool {
         crate::db_browser::bookmark_exists(url).unwrap_or(false)
+    }
+
+    /// Force webview resize by toggling sidebar state over two frames
+    /// This triggers egui layout recalculation
+    pub fn force_sidebar_resize(&mut self) {
+        log::info!("Scheduling sidebar resize toggle (current state: {})", self.sidebar_open);
+        self.resize_toggle_step = 1;  // Start toggle cycle
+    }
+
+    /// Process resize toggle if pending (call each frame)
+    pub fn process_resize_toggle(&mut self) {
+        match self.resize_toggle_step {
+            1 => {
+                // Step 1: Toggle to opposite state
+                self.sidebar_open = !self.sidebar_open;
+                log::info!("Resize toggle step 1: toggled to {}", self.sidebar_open);
+                self.resize_toggle_step = 2;
+            }
+            2 => {
+                // Step 2: Restore to original state
+                self.sidebar_open = !self.sidebar_open;
+                log::info!("Resize toggle step 2: restored to {}", self.sidebar_open);
+                self.resize_toggle_step = 0;  // Done
+            }
+            _ => {}  // No toggle pending
+        }
+    }
+
+    /// Explicitly open the sidebar
+    pub fn open_sidebar(&mut self) {
+        if !self.sidebar_open {
+            log::info!("Opening sidebar");
+        }
+        self.sidebar_open = true;
+    }
+
+    /// Explicitly close the sidebar
+    pub fn close_sidebar(&mut self) {
+        if self.sidebar_open {
+            log::info!("Closing sidebar");
+        }
+        self.sidebar_open = false;
+    }
+
+    /// Toggle sidebar state (for hamburger button)
+    pub fn toggle_sidebar(&mut self) {
+        self.sidebar_open = !self.sidebar_open;
+        log::info!("Toggled sidebar to {}", self.sidebar_open);
     }
 }

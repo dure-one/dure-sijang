@@ -1,4 +1,4 @@
-pub use crate::dlg_settings_stt::*;
+pub use crate::side_settings_stt::*;
 use crate::LogLevel;
 use crate::Settings;
 use eframe::egui;
@@ -6,19 +6,9 @@ use egui_i18n::tr;
 use egui_material3::{get_global_theme, MaterialButton, MaterialCheckbox, ThemeMode};
 use sys_locale::get_locale;
 
-impl DlgSettings {
+impl SideSettings {
     pub fn new() -> Self {
         Self::default()
-    }
-
-    pub fn open(&mut self) {
-        self.save_clicked = false;
-        self.theme_to_apply = None;
-        self.open = true;
-    }
-
-    pub fn close(&mut self) {
-        self.open = false;
     }
 
     fn detect_system_language() -> String {
@@ -131,53 +121,29 @@ impl DlgSettings {
         }
     }
 
-    pub fn show(&mut self, ctx: &egui::Context, settings: &mut Settings) {
-        if !self.open {
-            return;
-        }
-
+    /// Render settings UI directly in a given Ui (for sidebar)
+    /// Auto-saves on every change
+    pub fn render_ui(&mut self, ui: &mut egui::Ui, settings: &mut Settings) {
         self.ensure_system_fonts_loaded(settings);
+        // Reset flags at start of frame
         self.save_clicked = false;
         self.theme_to_apply = None;
 
-        let mut close_clicked = false;
-        let mut save_clicked = false;
+        ui.heading("Settings");
+        ui.add_space(8.0);
 
-        egui::Window::new("Settings")
-            .id(egui::Id::new("settings_window"))
-            .title_bar(false)
-            .resizable(true)
-            .collapsible(false)
-            .scroll([false, false])
-            .min_width(600.0)
-            .min_height(400.0)
-            .resize(|r| {
-                r.default_size([
-                    ctx.content_rect().width() - 40.0,
-                    ctx.content_rect().height() - 40.0,
-                ])
-                .max_size([
-                    ctx.content_rect().width() - 40.0,
-                    ctx.content_rect().height() - 40.0,
-                ])
-            })
-            .show(ctx, |ui| {
-                ui.heading("Settings");
-                ui.add_space(8.0);
+        let max_height = ui.available_height() - 60.0;
 
-                let max_height = ui.available_height() - 50.0;
-
-                egui::ScrollArea::both()
-                    .id_salt("settings_scroll")
-                    .max_height(max_height)
-                    .show(ui, |ui| {
-                        // Language + Font + Text Style
-                        ui.horizontal_wrapped(|ui| {
-                            // Language Selector
+        egui::ScrollArea::vertical()
+            .id_salt("settings_scroll")
+            .max_height(max_height)
+            .show(ui, |ui| {
+                        // Language Selector
+                        ui.horizontal(|ui| {
                             ui.label(tr!("language"));
                             let mut selected_lang = settings.language.clone();
 
-                            egui::ComboBox::from_label("   ")
+                            egui::ComboBox::from_id_salt("language_selector")
                                 .selected_text(match selected_lang.as_str() {
                                     "Auto" => "Auto",
                                     "en-US" => "English",
@@ -211,10 +177,10 @@ impl DlgSettings {
                                 };
                                 egui_i18n::set_language(&language_to_apply);
                             }
+                        });
 
-                            ui.add_space(8.0);
-
-                            // Font Selector
+                        // Font Selector
+                        ui.horizontal(|ui| {
                             ui.label(tr!("font"));
                             let mut selected = self.selected_font_display.clone();
 
@@ -259,10 +225,10 @@ impl DlgSettings {
                                 }
                                 load_fonts(ui.ctx());
                             }
+                        });
 
-                            ui.add_space(8.0);
-
-                            // Text Style Override Selector
+                        // Text Style Override Selector
+                        ui.horizontal(|ui| {
                             let mut override_text_style = ui.style().override_text_style.clone();
                             ui.label(tr!("text-style"));
                             egui::ComboBox::from_id_salt("override_text_style")
@@ -296,10 +262,11 @@ impl DlgSettings {
                                 settings.override_text_style = style_string;
                             }
                         });
+
                         ui.add_space(8.0);
 
-                        // Display Size + Color Mode + Theme
-                        ui.horizontal_wrapped(|ui| {
+                        // Display Size Selector
+                        ui.horizontal(|ui| {
                             ui.label(tr!("display-size"));
                             let display_sizes = vec![
                                 ("Phone (412x732)", (412.0, 732.0)),
@@ -308,7 +275,7 @@ impl DlgSettings {
                                 ("1080p (1920x1080)", (1920.0, 1080.0)),
                             ];
                             let mut selected_size = settings.display_size.clone();
-                            egui::ComboBox::from_label("  ")
+                            egui::ComboBox::from_id_salt("display_size_selector")
                                 .selected_text(&selected_size)
                                 .show_ui(ui, |ui| {
                                     for (label, _size) in &display_sizes {
@@ -332,42 +299,61 @@ impl DlgSettings {
                                     log::info!("Window resized to {}x{}", size.0, size.1);
                                 }
                             }
-                            ui.add_space(8.0);
+                        });
 
-                            // Color Mode Selector
+                        // Color Mode Selector
+                        ui.horizontal(|ui| {
                             ui.label(tr!("color-mode"));
                             if let Ok(mut theme) = get_global_theme().lock() {
+                                // Lighter selection color (match tab active background)
+                                const ACTIVE_BG_ALPHA: u8 = 60;
+
                                 let light_selected = theme.theme_mode == ThemeMode::Light;
-                                if ui
-                                    .selectable_label(light_selected, tr!("light-mode"))
-                                    .clicked()
-                                {
+                                let mut light_button = egui::Button::new(tr!("light-mode"));
+                                if light_selected {
+                                    let base_color = ui.style().visuals.widgets.inactive.bg_fill;
+                                    let active_color = egui::Color32::from_rgba_premultiplied(
+                                        base_color.r(), base_color.g(), base_color.b(), ACTIVE_BG_ALPHA
+                                    );
+                                    light_button = light_button.fill(active_color);
+                                }
+                                if ui.add(light_button).clicked() {
                                     theme.theme_mode = ThemeMode::Light;
-                                    settings.theme_mode =
-                                        Self::theme_mode_to_string(ThemeMode::Light);
+                                    settings.theme_mode = Self::theme_mode_to_string(ThemeMode::Light);
                                 }
 
                                 let auto_selected = theme.theme_mode == ThemeMode::Auto;
-                                if ui
-                                    .selectable_label(auto_selected, tr!("auto-mode"))
-                                    .clicked()
-                                {
+                                let mut auto_button = egui::Button::new(tr!("auto-mode"));
+                                if auto_selected {
+                                    let base_color = ui.style().visuals.widgets.inactive.bg_fill;
+                                    let active_color = egui::Color32::from_rgba_premultiplied(
+                                        base_color.r(), base_color.g(), base_color.b(), ACTIVE_BG_ALPHA
+                                    );
+                                    auto_button = auto_button.fill(active_color);
+                                }
+                                if ui.add(auto_button).clicked() {
                                     theme.theme_mode = ThemeMode::Auto;
-                                    settings.theme_mode =
-                                        Self::theme_mode_to_string(ThemeMode::Auto);
+                                    settings.theme_mode = Self::theme_mode_to_string(ThemeMode::Auto);
                                 }
 
                                 let dark_selected = theme.theme_mode == ThemeMode::Dark;
-                                if ui
-                                    .selectable_label(dark_selected, tr!("dark-mode"))
-                                    .clicked()
-                                {
+                                let mut dark_button = egui::Button::new(tr!("dark-mode"));
+                                if dark_selected {
+                                    let base_color = ui.style().visuals.widgets.inactive.bg_fill;
+                                    let active_color = egui::Color32::from_rgba_premultiplied(
+                                        base_color.r(), base_color.g(), base_color.b(), ACTIVE_BG_ALPHA
+                                    );
+                                    dark_button = dark_button.fill(active_color);
+                                }
+                                if ui.add(dark_button).clicked() {
                                     theme.theme_mode = ThemeMode::Dark;
-                                    settings.theme_mode =
-                                        Self::theme_mode_to_string(ThemeMode::Dark);
+                                    settings.theme_mode = Self::theme_mode_to_string(ThemeMode::Dark);
                                 }
                             }
+                        });
 
+                        // Theme Selector
+                        ui.horizontal(|ui| {
                             ui.label(tr!("theme-mode"));
                             let mut selected_theme = settings.theme_name.clone();
                             egui::ComboBox::from_id_salt("theme_selector")
@@ -403,11 +389,17 @@ impl DlgSettings {
 
                         ui.add_space(8.0);
 
-                        ui.horizontal_wrapped(|ui| {
+                        // Show Logs Checkbox
+                        ui.horizontal(|ui| {
                             ui.label(tr!("show-logs"));
                             ui.add(MaterialCheckbox::new(&mut settings.show_logs, tr!("show")));
+                        });
 
+                        // Log Level Selector
+                        ui.horizontal(|ui| {
+                            ui.label("Log Level:");
                             let current_level = Self::string_to_log_level(&settings.log_level);
+                            const ACTIVE_BG_ALPHA: u8 = 60;
 
                             for (level, label) in [
                                 (LogLevel::Error, "ERROR"),
@@ -417,7 +409,15 @@ impl DlgSettings {
                                 (LogLevel::Trace, "TRACE"),
                             ] {
                                 let selected = current_level == level;
-                                if ui.selectable_label(selected, label).clicked() {
+                                let mut button = egui::Button::new(label);
+                                if selected {
+                                    let base_color = ui.style().visuals.widgets.inactive.bg_fill;
+                                    let active_color = egui::Color32::from_rgba_premultiplied(
+                                        base_color.r(), base_color.g(), base_color.b(), ACTIVE_BG_ALPHA
+                                    );
+                                    button = button.fill(active_color);
+                                }
+                                if ui.add(button).clicked() {
                                     settings.log_level = Self::log_level_to_string(level);
                                     crate::log_capture::update_log_level(&settings.log_level);
                                 }
@@ -427,29 +427,7 @@ impl DlgSettings {
                         ui.add_space(8.0);
                     });
 
-                ui.add_space(8.0);
-
-                // Action buttons
-                ui.horizontal(|ui| {
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.add(MaterialButton::filled(tr!("save"))).clicked() {
-                            log::info!("Settings dialog Save clicked!");
-                            save_clicked = true;
-                        }
-                        if ui.add(MaterialButton::outlined(tr!("cancel"))).clicked() {
-                            log::info!("Settings dialog Cancel clicked!");
-                            close_clicked = true;
-                        }
-                    });
-                });
-            });
-
-        if save_clicked {
-            self.save_clicked = true;
-            self.close();
-        }
-        if close_clicked {
-            self.close();
-        }
+        // Auto-save: trigger save on any setting change
+        self.save_clicked = true;
     }
 }
