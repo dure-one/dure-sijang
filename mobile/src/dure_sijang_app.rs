@@ -532,12 +532,12 @@ impl DureSijangApp {
             let about_text = tr!("about");
             let exit_text = tr!("exit");
             let settings_item = self.create_menu_item(&settings_text, "settings", || {
-                println!("Settings clicked - switching to Settings sidebar tab");
+                log::debug!("Settings clicked - switching to Settings sidebar tab");
                 open_settings.set(true);
                 close_menu.set(true);
             });
             let about_item = self.create_menu_item(&about_text, "info", || {
-                println!("About clicked!");
+                log::debug!("About clicked");
                 open_about.set(true);
                 close_menu.set(true);
             });
@@ -545,7 +545,7 @@ impl DureSijangApp {
             let exit_item = self.create_menu_item(&exit_text, "exit", || {
                 close_menu.set(true);
                 should_exit.set(true);
-                println!("Exit clicked!");
+                log::debug!("Exit clicked");
             });
 
             let menu_builder = menu("standard_menu", &mut self.standard_menu_open)

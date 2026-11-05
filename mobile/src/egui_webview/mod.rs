@@ -160,7 +160,7 @@ impl EguiWebView {
                         if let Ok(guard) = view_ref_weak.lock() {
                             if let Some(view) = guard.as_ref() {
                                 if let Err(err) = view.evaluate_script(include_str!("webview.js")) {
-                                    println!("Error loading webview script: {err}");
+                                    log::error!("Error loading webview script: {err}");
                                 }
                             }
                         }
@@ -244,7 +244,7 @@ impl EguiWebView {
                         if let Ok(guard) = view_ref_weak.lock() {
                             if let Some(view) = guard.as_ref() {
                                 if let Err(err) = view.evaluate_script(include_str!("webview.js")) {
-                                    println!("Error loading webview script: {err}");
+                                    log::error!("Error loading webview script: {err}");
                                 }
                             }
                         }
@@ -545,14 +545,14 @@ pub fn webview_end_frame(ctx: &Context) {
         state.views.retain(|id, view| {
             let can_upgrade = view.upgrade().is_some();
             if !can_upgrade {
-                println!("🧹 Cleaning up dead weak reference for {:?}", id);
+                log::debug!("Cleaning up dead weak reference for {:?}", id);
             }
             can_upgrade
         });
 
         let after_count = state.views.len();
         if before_count != after_count {
-            println!("📊 Global views: {} → {}", before_count, after_count);
+            log::debug!("Global views: {} → {}", before_count, after_count);
         }
 
         state.rendered_this_frame.clear();

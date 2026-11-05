@@ -51,10 +51,6 @@ pub fn android_main(app: AndroidApp) {
     log::info!("Android logger initialized successfully");
     log::info!("Starting mobile application with egui");
 
-    // Also use println! as backup logging method
-    println!("Dure-Sijang: Application starting");
-    eprintln!("Dure-Sijang: Error stream test");
-
     // Set up panic handler to catch crashes
     std::panic::set_hook(Box::new(|panic_info| {
         let payload = panic_info.payload();
@@ -112,7 +108,6 @@ pub fn android_main(app: AndroidApp) {
         }
         Err(e) => {
             log::error!("DureSijangApp failed: {}", e);
-            eprintln!("DureSijangApp failed: {}", e);
         }
     }
 }
