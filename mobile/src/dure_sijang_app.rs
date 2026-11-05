@@ -797,14 +797,14 @@ impl DureSijangApp {
         });
 
         // Update log level in real-time
-        log::error!("Updating log level to: {}", self.settings.log_level);
+        log::info!("Updating log level to: {}", self.settings.log_level);
         crate::log_capture::update_log_level(&self.settings.log_level);
 
         // Save to file
         if let Some(ref config) = self.config {
             match config.save_settings(&self.settings) {
                 Ok(_) => {
-                    log::error!("Settings saved successfully");
+                    log::info!("Settings saved successfully");
                 }
                 Err(e) => {
                     log::error!("Failed to save settings: {}", e);
