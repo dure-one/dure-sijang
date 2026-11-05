@@ -17,9 +17,17 @@ use anyhow::{Context, Result};
 use std::sync::Mutex;
 
 #[cfg(target_os = "android")]
+use std::time::Instant;
+
+#[cfg(target_os = "android")]
 static WEBVIEW_MANAGER: once_cell::sync::Lazy<
     Mutex<crate::android_webview::AndroidWebViewManager>,
 > = once_cell::sync::Lazy::new(|| Mutex::new(crate::android_webview::AndroidWebViewManager::new()));
+
+/// Global mutex for serializing Activity lifecycle operations to prevent race conditions
+#[cfg(target_os = "android")]
+static ACTIVITY_LIFECYCLE_LOCK: once_cell::sync::Lazy<Mutex<()>> =
+    once_cell::sync::Lazy::new(|| Mutex::new(()));
 
 /// Helper to load a class using the Activity's class loader
 #[cfg(target_os = "android")]
@@ -89,7 +97,19 @@ fn load_class_from_activity<'local>(
 /// using Android's Activity Embedding feature (30/70 split).
 #[cfg(target_os = "android")]
 pub fn launch_webview_activity(url: &str, tab_id: i32) -> Result<()> {
-    log::info!("Launching WebViewActivity: url={}, tab_id={}", url, tab_id);
+    let start = Instant::now();
+    log::info!(
+        "[TAB_SWITCH] launch_webview_activity STARTED: tab_id={}, url={}",
+        tab_id,
+        url
+    );
+
+    // Acquire lifecycle lock to serialize destroy/launch operations
+    let _guard = ACTIVITY_LIFECYCLE_LOCK
+        .lock()
+        .map_err(|e| anyhow::anyhow!("Failed to acquire lifecycle lock: {}", e))?;
+
+    log::info!("[TAB_SWITCH] Acquired lifecycle lock for launch");
 
     // Get JNI environment
     let ctx = ndk_context::android_context();
@@ -121,8 +141,14 @@ pub fn launch_webview_activity(url: &str, tab_id: i32) -> Result<()> {
     )
     .context("Failed to call WryWebViewBridge.launchWebView")?;
 
-    log::info!("Successfully launched WebViewActivity for tab {}", tab_id);
+    log::info!(
+        "[TAB_SWITCH] launch_webview_activity COMPLETED in {:?}, tab_id={}",
+        start.elapsed(),
+        tab_id
+    );
+    log::info!("[TAB_SWITCH] Released lifecycle lock after launch");
     Ok(())
+    // Lock released here (RAII)
 }
 
 /// Destroy the currently active WebViewActivity
@@ -130,7 +156,15 @@ pub fn launch_webview_activity(url: &str, tab_id: i32) -> Result<()> {
 /// This finishes the WebViewActivity and cleans up its resources.
 #[cfg(target_os = "android")]
 pub fn destroy_webview_activity() -> Result<()> {
-    log::info!("Destroying WebViewActivity");
+    let start = Instant::now();
+    log::info!("[TAB_SWITCH] destroy_webview_activity STARTED");
+
+    // Acquire lifecycle lock to serialize destroy/launch operations
+    let _guard = ACTIVITY_LIFECYCLE_LOCK
+        .lock()
+        .map_err(|e| anyhow::anyhow!("Failed to acquire lifecycle lock: {}", e))?;
+
+    log::info!("[TAB_SWITCH] Acquired lifecycle lock for destroy");
 
     // Get JNI environment
     let ctx = ndk_context::android_context();
@@ -148,8 +182,13 @@ pub fn destroy_webview_activity() -> Result<()> {
     env.call_static_method(bridge_class, "destroyWebView", "()V", &[])
         .context("Failed to call WryWebViewBridge.destroyWebView")?;
 
-    log::info!("Successfully destroyed WebViewActivity");
+    log::info!(
+        "[TAB_SWITCH] destroy_webview_activity COMPLETED in {:?}",
+        start.elapsed()
+    );
+    log::info!("[TAB_SWITCH] Released lifecycle lock after destroy");
     Ok(())
+    // Lock released here (RAII)
 }
 
 /// Navigate the current WebViewActivity to a new URL

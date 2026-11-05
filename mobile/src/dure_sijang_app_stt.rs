@@ -158,4 +158,9 @@ pub struct DureSijangApp {
 
     // Browser state (MVVM)
     pub browser_state: crate::browser_stt::BrowserState,
+
+    // Tab switch debouncing and synchronization
+    pub last_tab_switch_time: Option<std::time::Instant>,
+    pub tab_switch_debounce_ms: u64,
+    pub tab_switch_in_progress: bool,
 }

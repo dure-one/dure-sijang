@@ -257,6 +257,11 @@ impl Default for DureSijangApp {
 
             // Browser state (MVVM)
             browser_state: crate::browser_stt::BrowserState::load_from_db(),
+
+            // Tab switch debouncing and synchronization
+            last_tab_switch_time: None,
+            tab_switch_debounce_ms: 300, // 300ms debounce
+            tab_switch_in_progress: false,
         };
 
         // Apply persisted theme preferences
@@ -1388,10 +1393,33 @@ impl DureSijangApp {
                         }
 
                         if ui.add(tab_button).clicked() {
+                            // DEBOUNCE CHECK: Prevent rapid clicks
+                            let now = std::time::Instant::now();
+                            if let Some(last_switch) = self.last_tab_switch_time {
+                                let elapsed = now.duration_since(last_switch).as_millis() as u64;
+                                if elapsed < self.tab_switch_debounce_ms {
+                                    log::warn!(
+                                        "[TAB_SWITCH] Ignoring rapid click ({}ms < {}ms debounce)",
+                                        elapsed,
+                                        self.tab_switch_debounce_ms
+                                    );
+                                    return; // Skip this click
+                                }
+                            }
+
+                            // CONCURRENT CHECK: Prevent overlapping switches
+                            if self.tab_switch_in_progress {
+                                log::warn!("[TAB_SWITCH] Switch already in progress, ignoring click");
+                                return;
+                            }
+
+                            self.tab_switch_in_progress = true;
+                            self.last_tab_switch_time = Some(now);
+
                             log::info!(
-                                "Switching active tab from {:?} to {}",
-                                self.browser_state.active_tab_index,
-                                idx
+                                "[TAB_SWITCH] User clicked tab {} (current: {:?})",
+                                idx,
+                                self.browser_state.active_tab_index
                             );
 
                             #[cfg(target_os = "android")]
@@ -1401,15 +1429,21 @@ impl DureSijangApp {
                                 // - wry WebView is cached and reused (AndroidWebViewManager)
                                 // - SplitPlaceholderRule shows split dynamically on tab click
                                 //
-                                // Future optimization: Keep WebViewActivity alive and switch
-                                // between cached WebViews without Activity destroy/recreate
+                                // Synchronization: ACTIVITY_LIFECYCLE_LOCK ensures destroy completes
+                                // before launch starts, preventing race conditions
 
                                 // Destroy old WebViewActivity
                                 if let Err(e) =
                                     crate::android_activity_embedding::destroy_webview_activity()
                                 {
                                     log::warn!("Failed to destroy old WebView: {}", e);
+                                    self.tab_switch_in_progress = false; // Clear flag on error
+                                    return;
                                 }
+
+                                // Small delay to let Android complete Activity.finish()
+                                std::thread::sleep(std::time::Duration::from_millis(50));
+                                log::debug!("[TAB_SWITCH] 50ms delay after destroy, before launch");
 
                                 // Launch WebViewActivity for clicked tab
                                 // onCreate() will get cached wry WebView from AndroidWebViewManager
@@ -1420,8 +1454,10 @@ impl DureSijangApp {
                                     )
                                 {
                                     log::error!("Failed to switch to tab {}: {}", idx, e);
+                                    self.tab_switch_in_progress = false; // Clear flag on error
+                                    return;
                                 } else {
-                                    log::info!("Switched to tab {} (wry WebView cached)", idx);
+                                    log::info!("[TAB_SWITCH] Switched to tab {} (wry WebView cached)", idx);
                                 }
                             }
 
@@ -1451,6 +1487,9 @@ impl DureSijangApp {
                             // Use the clicked tab's URL, not the iterator's current tab
                             self.browser_state.url_input =
                                 self.browser_state.tabs[idx].url_bar.clone();
+
+                            // Clear in-progress flag
+                            self.tab_switch_in_progress = false;
                         }
 
                         // Close button
