@@ -1,4 +1,20 @@
 use std::sync::{Arc, OnceLock, RwLock};
+use chrono::Utc;
+
+/// Format log message with timestamp and level
+fn format_log(level: log::Level, target: &str, message: &str) -> String {
+    let timestamp = Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ");
+
+    let level_str = match level {
+        log::Level::Error => "ERROR",
+        log::Level::Warn => "WARN",
+        log::Level::Info => "INFO",
+        log::Level::Debug => "DEBUG",
+        log::Level::Trace => "TRACE",
+    };
+
+    format!("{} [{}] {}: {}", timestamp, level_str, target, message)
+}
 
 /// Target prefixes for noisy transitive dependencies (pulled in by eframe/egui's Linux
 /// accessibility bridge and dark-mode detection) that spam INFO/DEBUG logs of their own
@@ -59,9 +75,9 @@ impl log::Log for CombinedLogger {
         }
 
         // Format the complete log line
-        let log_line = format!("[{}] {}: {}", level, target, message);
+        let log_line = format_log(level, target, &message);
 
-        // Convert level to string
+        // Extract level string for append_log
         let level_str = match level {
             log::Level::Error => "ERROR",
             log::Level::Warn => "WARN",
@@ -73,23 +89,10 @@ impl log::Log for CombinedLogger {
         // Append to global log buffer with level filtering
         crate::dure_sijang_app::append_log(level_str, log_line.clone());
 
-        // On Android, also send to logcat via android_logger
-        #[cfg(target_os = "android")]
-        {
-            // Use println/eprintln as backup - android_logger redirects these to logcat
-            match level {
-                log::Level::Error => eprintln!("[{}] {}", target, message),
-                _ => println!("[{}] {}", target, message),
-            }
-        }
-
-        // On non-Android, just print to stdout/stderr
-        #[cfg(not(target_os = "android"))]
-        {
-            match level {
-                log::Level::Error => eprintln!("{}", log_line),
-                _ => println!("{}", log_line),
-            }
+        // Print to stdout/stderr
+        match level {
+            log::Level::Error => eprintln!("{}", log_line),
+            _ => println!("{}", log_line),
         }
     }
 
@@ -122,8 +125,6 @@ pub fn init_combined_logger(level_filter: log::LevelFilter) {
 
 /// Update the log level at runtime
 pub fn update_log_level(level: &str) {
-    eprintln!("DEBUG: update_log_level called with: {}", level);
-
     let level_filter = match level.to_uppercase().as_str() {
         "TRACE" => log::LevelFilter::Trace,
         "DEBUG" => log::LevelFilter::Debug,
@@ -133,18 +134,10 @@ pub fn update_log_level(level: &str) {
         _ => log::LevelFilter::Error,
     };
 
-    eprintln!("DEBUG: Converted to filter: {:?}", level_filter);
-
     if let Some(logger) = LOGGER.get() {
-        eprintln!("DEBUG: Logger found, updating...");
         if let Ok(mut filter) = logger.level_filter.write() {
             *filter = level_filter;
             log::set_max_level(level_filter);
-            eprintln!("DEBUG: Log level updated to {:?}", level_filter);
-        } else {
-            eprintln!("DEBUG: Failed to acquire write lock on filter");
         }
-    } else {
-        eprintln!("DEBUG: Logger not initialized yet!");
     }
 }

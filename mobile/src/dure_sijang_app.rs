@@ -680,6 +680,37 @@ impl DureSijangApp {
         self.render_browser_ui(ui, frame);
     }
 
+    /// Parse RFC5424 log line to extract readable format
+    /// Input: <134>1 2023-03-15T14:30:00.123Z - dure-sijang - - - [INFO] mobile: Started
+    /// Output: [14:30:00.123] [INFO] mobile: Started
+    fn parse_rfc5424_for_display(line: &str) -> String {
+        // Try to parse RFC5424 format
+        if let Some(msg_start) = line.find(" - - - ") {
+            let msg_part = &line[msg_start + 7..]; // Skip " - - - "
+
+            // Extract timestamp (between first space and third space)
+            if let Some(first_space) = line.find(' ') {
+                if let Some(second_space) = line[first_space + 1..].find(' ') {
+                    let timestamp_full = &line[first_space + 1..first_space + 1 + second_space];
+
+                    // Extract time portion (HH:MM:SS.mmm)
+                    if let Some(time_start) = timestamp_full.find('T') {
+                        if let Some(time_end) = timestamp_full.find('Z') {
+                            let time = &timestamp_full[time_start + 1..time_end];
+                            return format!("[{}] {}", time, msg_part);
+                        }
+                    }
+                }
+            }
+
+            // Fallback: just show the message part
+            return msg_part.to_string();
+        }
+
+        // Fallback: show original line if not RFC5424 format
+        line.to_string()
+    }
+
     fn render_logs(&mut self, ui: &mut egui::Ui) {
         // put blank space before logs
         // Calculate max height: leave 200px for log box if enabled
@@ -691,9 +722,14 @@ impl DureSijangApp {
             ui.add_space(max_height);
         }
 
-        // Read from global log buffer
+        // Read from global log buffer and parse for pretty display
         let log_text = if let Ok(buffer) = get_log_buffer().lock() {
-            buffer.clone()
+            // Parse each line from RFC5424 to readable format
+            buffer
+                .lines()
+                .map(|line| Self::parse_rfc5424_for_display(line))
+                .collect::<Vec<_>>()
+                .join("\n")
         } else {
             String::from("Unable to access logs")
         };

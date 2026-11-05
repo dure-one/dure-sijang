@@ -69,8 +69,11 @@ impl Debug for EguiWebView {
 
 impl Drop for EguiWebView {
     fn drop(&mut self) {
-        println!("🗑️  Dropping EguiWebView {:?}", self.id);
-        println!("   Arc strong count: {}", Arc::strong_count(&self.view));
+        log::debug!(
+            "Dropping EguiWebView {:?} (Arc strong count: {})",
+            self.id,
+            Arc::strong_count(&self.view)
+        );
 
         // Don't call set_visible(false) - X11 window may already be destroyed
         // Visibility cleanup is handled by webview_end_frame() during normal operation
