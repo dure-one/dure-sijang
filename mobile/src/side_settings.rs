@@ -176,6 +176,7 @@ impl SideSettings {
                                     selected_lang
                                 };
                                 egui_i18n::set_language(&language_to_apply);
+                                self.save_clicked = true;
                             }
                         });
 
@@ -224,6 +225,7 @@ impl SideSettings {
                                     setup_local_fonts(Some(&settings.font_path));
                                 }
                                 load_fonts(ui.ctx());
+                                self.save_clicked = true;
                             }
                         });
 
@@ -260,6 +262,7 @@ impl SideSettings {
                             };
                             if style_string != settings.override_text_style {
                                 settings.override_text_style = style_string;
+                                self.save_clicked = true;
                             }
                         });
 
@@ -298,6 +301,7 @@ impl SideSettings {
                                     ));
                                     log::info!("Window resized to {}x{}", size.0, size.1);
                                 }
+                                self.save_clicked = true;
                             }
                         });
 
@@ -320,6 +324,7 @@ impl SideSettings {
                                 if ui.add(light_button).clicked() {
                                     theme.theme_mode = ThemeMode::Light;
                                     settings.theme_mode = Self::theme_mode_to_string(ThemeMode::Light);
+                                    self.save_clicked = true;
                                 }
 
                                 let auto_selected = theme.theme_mode == ThemeMode::Auto;
@@ -334,6 +339,7 @@ impl SideSettings {
                                 if ui.add(auto_button).clicked() {
                                     theme.theme_mode = ThemeMode::Auto;
                                     settings.theme_mode = Self::theme_mode_to_string(ThemeMode::Auto);
+                                    self.save_clicked = true;
                                 }
 
                                 let dark_selected = theme.theme_mode == ThemeMode::Dark;
@@ -348,6 +354,7 @@ impl SideSettings {
                                 if ui.add(dark_button).clicked() {
                                     theme.theme_mode = ThemeMode::Dark;
                                     settings.theme_mode = Self::theme_mode_to_string(ThemeMode::Dark);
+                                    self.save_clicked = true;
                                 }
                             }
                         });
@@ -382,6 +389,7 @@ impl SideSettings {
                                         {
                                             settings.theme_name = value.to_string();
                                             self.theme_to_apply = Some(value.to_string());
+                                            self.save_clicked = true;
                                         }
                                     }
                                 });
@@ -392,7 +400,9 @@ impl SideSettings {
                         // Show Logs Checkbox
                         ui.horizontal(|ui| {
                             ui.label(tr!("show-logs"));
-                            ui.add(MaterialCheckbox::new(&mut settings.show_logs, tr!("show")));
+                            if ui.add(MaterialCheckbox::new(&mut settings.show_logs, tr!("show"))).changed() {
+                                self.save_clicked = true;
+                            }
                         });
 
                         // Log Level Selector
@@ -420,14 +430,12 @@ impl SideSettings {
                                 if ui.add(button).clicked() {
                                     settings.log_level = Self::log_level_to_string(level);
                                     crate::log_capture::update_log_level(&settings.log_level);
+                                    self.save_clicked = true;
                                 }
                             }
                         });
 
                         ui.add_space(8.0);
                     });
-
-        // Auto-save: trigger save on any setting change
-        self.save_clicked = true;
     }
 }
