@@ -88,7 +88,7 @@ mod bsd_artifact_tests {
         assert_eq!(
             EXPECTED_BSD_ARTIFACTS.len(),
             NEW_BSD_PLATFORMS,
-            "Expected {NEW_BSD_PLATFORMS} new BSD artifacts"
+            "Expected {} new BSD artifacts", NEW_BSD_PLATFORMS
         );
 
         // This validates the VirusTotal scan should process 12 files total
@@ -96,6 +96,40 @@ mod bsd_artifact_tests {
             TOTAL_EXPECTED,
             12,
             "VirusTotal scan should process 12 total files"
+        );
+    }
+
+    #[test]
+    fn test_workflow_has_disk_cleanup() {
+        // Read workflow file (from workspace root, not mobile/)
+        let workflow_path = "../.github/workflows/release.yml";
+        let workflow = std::fs::read_to_string(workflow_path)
+            .expect("Failed to read workflow file");
+
+        // Must have runner disk cleanup before VM starts
+        assert!(
+            workflow.contains("free-disk-space") || workflow.contains("jlumbroso/free-disk-space"),
+            "Workflow must use free-disk-space action to prevent 'No space left on device' errors"
+        );
+
+        // Must have package cache cleanup for at least one BSD variant
+        let has_pkg_clean = workflow.contains("pkg clean");
+        let has_pkgin_clean = workflow.contains("pkgin clean");
+        assert!(
+            has_pkg_clean || has_pkgin_clean,
+            "Workflow must clean package caches after installation"
+        );
+
+        // Must have disk space monitoring
+        assert!(
+            workflow.contains("df -h"),
+            "Workflow must monitor disk space with 'df -h'"
+        );
+
+        // Must disable incremental builds to save space
+        assert!(
+            workflow.contains("CARGO_INCREMENTAL=0"),
+            "Workflow must set CARGO_INCREMENTAL=0 to reduce disk usage"
         );
     }
 }

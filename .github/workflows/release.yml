@@ -414,6 +414,17 @@ jobs:
             version: '11.0'
 
     steps:
+      - name: Free Disk Space on Runner
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: false
+
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
@@ -429,9 +440,13 @@ jobs:
           memory: 5G
           cpu_count: 4
           run: |
+            echo "=== Initial disk space ==="
+            df -h
+
             # FreeBSD package installation
             if [ "${{ matrix.os.name }}" = "freebsd" ]; then
               sudo pkg install -y git curl pkgconf gtk3 cairo pango gdk-pixbuf2 webkit2-gtk_60 libsoup3
+              sudo pkg clean -y
               curl --proto 'https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
               source $HOME/.cargo/env
             fi
@@ -439,20 +454,31 @@ jobs:
             # OpenBSD package installation
             if [ "${{ matrix.os.name }}" = "openbsd" ]; then
               sudo pkg_add rust git pkgconf gtk+3 webkit2-gtk3
+              # OpenBSD auto-cleans package cache
             fi
 
             # NetBSD package installation
             if [ "${{ matrix.os.name }}" = "netbsd" ]; then
               sudo pkgin -y install git curl clang pkgconf gtk3+ cairo pango gdk-pixbuf2 webkit-gtk
+              sudo pkgin clean
               curl --proto 'https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
               source "$HOME/.cargo/env"
               export CC=clang
               export CXX=clang++
             fi
 
+            echo "=== After package installation ==="
+            df -h
+
+            # Disable incremental builds to save disk space
+            export CARGO_INCREMENTAL=0
             export CARGO_TERM_COLOR=always
             export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/libdata/pkgconfig
+
             cargo build --release --package mobile
+
+            echo "=== After cargo build ==="
+            df -h
 
       - name: Upload BSD Artifact
         uses: actions/upload-artifact@v4
