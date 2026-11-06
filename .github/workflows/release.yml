@@ -19,6 +19,7 @@ on:
           - windows
           - macos
           - android
+          - bsd
 
 env:
   RUST_VERSION: stable
@@ -389,9 +390,80 @@ jobs:
           path: ./mobile/app/build/outputs/apk/release/dure-sijang-all.aab
           retention-days: 1
 
+  build-bsd:
+    name: Build - ${{ matrix.os.name }} ${{ matrix.os.architecture }}
+    runs-on: ubuntu-latest
+    if: github.event.inputs.platforms == 'all' || github.event.inputs.platforms == 'bsd' || github.event.inputs.platforms == ''
+    strategy:
+      matrix:
+        os:
+          - name: freebsd
+            architecture: x86-64
+            version: '15.1'
+
+          - name: openbsd
+            architecture: x86-64
+            version: '8.0'
+
+          - name: openbsd
+            architecture: arm64
+            version: '8.0'
+
+          - name: netbsd
+            architecture: x86-64
+            version: '11.0'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Build ${{ matrix.os.name }} ${{ matrix.os.architecture }}
+        uses: cross-platform-actions/action@master
+        with:
+          operating_system: ${{ matrix.os.name }}
+          architecture: ${{ matrix.os.architecture }}
+          version: ${{ matrix.os.version }}
+          shell: bash
+          memory: 5G
+          cpu_count: 4
+          run: |
+            # FreeBSD package installation
+            if [ "${{ matrix.os.name }}" = "freebsd" ]; then
+              sudo pkg install -y git curl pkgconf gtk3 cairo pango gdk-pixbuf2 webkit2-gtk_60 libsoup3
+              curl --proto 'https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+              source $HOME/.cargo/env
+            fi
+
+            # OpenBSD package installation
+            if [ "${{ matrix.os.name }}" = "openbsd" ]; then
+              sudo pkg_add rust git pkgconf gtk+3 webkit2-gtk3
+            fi
+
+            # NetBSD package installation
+            if [ "${{ matrix.os.name }}" = "netbsd" ]; then
+              sudo pkgin -y install git curl clang pkgconf gtk3+ cairo pango gdk-pixbuf2 webkit-gtk
+              curl --proto 'https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+              source "$HOME/.cargo/env"
+              export CC=clang
+              export CXX=clang++
+            fi
+
+            export CARGO_TERM_COLOR=always
+            export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/libdata/pkgconfig
+            cargo build --release --package mobile
+
+      - name: Upload BSD Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BIN_NAME }}-${{ matrix.os.architecture == 'x86-64' && 'x86_64' || 'aarch64' }}-unknown-${{ matrix.os.name }}
+          path: target/release/${{ env.BIN_NAME }}
+          retention-days: 1
+
   release:
     name: Release
-    needs: [build]
+    needs: [build, build-bsd]
     # We run the release job only if a tag starts with 'v' letter
     if: startsWith( github.ref, 'refs/tags/v' )
     runs-on: ubuntu-22.04
@@ -424,7 +496,11 @@ jobs:
             ./artifacts/dure-sijang-x86_64-unknown-linux-musl/dure-sijang \
             ./artifacts/dure-sijang-x86_64-pc-windows-msvc/dure-sijang-x86_64.exe \
             ./artifacts/dure-sijang-i686-pc-windows-msvc/dure-sijang-i686.exe \
-            ./artifacts/dure-sijang-aarch64-pc-windows-msvc/dure-sijang-aarch64.exe; do
+            ./artifacts/dure-sijang-aarch64-pc-windows-msvc/dure-sijang-aarch64.exe \
+            ./artifacts/dure-sijang-x86_64-unknown-freebsd/dure-sijang \
+            ./artifacts/dure-sijang-x86_64-unknown-openbsd/dure-sijang \
+            ./artifacts/dure-sijang-aarch64-unknown-openbsd/dure-sijang \
+            ./artifacts/dure-sijang-x86_64-unknown-netbsd/dure-sijang; do
             # ./artifacts/dure-sijang-aarch64-linux-android/dure-sijang \
             # ./artifacts/dure-sijang-armv7-linux-androideabi/dure-sijang \
             # ./artifacts/dure-sijang-armv7-unknown-linux-musleabihf/dure-sijang \
@@ -467,11 +543,11 @@ jobs:
             ./artifacts/dure-sijang-x86_64-unknown-linux-musl/dure-sijang \
             ./artifacts/dure-sijang-x86_64-pc-windows-msvc/dure-sijang-x86_64.exe \
             ./artifacts/dure-sijang-i686-pc-windows-msvc/dure-sijang-i686.exe \
-            ./artifacts/dure-sijang-aarch64-pc-windows-msvc/dure-sijang-aarch64.exe
-            # ./artifacts/dure-sijang-aarch64-linux-android/dure-sijang \
-            # ./artifacts/dure-sijang-armv7-linux-androideabi/dure-sijang \
-            # ./artifacts/dure-sijang-armv7-unknown-linux-musleabihf/dure-sijang \
-            # ./artifacts/dure-sijang-x86_64-unknown-freebsd/dure-sijang \
+            ./artifacts/dure-sijang-aarch64-pc-windows-msvc/dure-sijang-aarch64.exe \
+            ./artifacts/dure-sijang-x86_64-unknown-freebsd/dure-sijang \
+            ./artifacts/dure-sijang-x86_64-unknown-openbsd/dure-sijang \
+            ./artifacts/dure-sijang-aarch64-unknown-openbsd/dure-sijang \
+            ./artifacts/dure-sijang-x86_64-unknown-netbsd/dure-sijang
 
       - name: Parse Analysis Results
         id: parse_results
