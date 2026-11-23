@@ -24,9 +24,9 @@ Cross-platform mycart browser with dual-mode navigation.
 
 | Arch          | Windows        | MacOS         | Linux        | Android        |
 |:--------------|:--------------:|:-------------:|:------------:|:--------------:|
-| X86_64(AMD64) | [GUI](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-x86_64.exe) | [GUI](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-x86_64-apple-darwin.tar.gz) | [GUI](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-x86_64-unknown-linux-musl.tar.gz) | [APK](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-all-signed.apk) |
+| X86_64(AMD64) | [GUI](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-x86_64.exe) | [GUI](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-x86_64-apple-darwin) | [GUI](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-x86_64-unknown-linux-musl) | [APK](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-all-signed.apk) |
 | I686(x86)     | [GUI](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-i686.exe) | - | - | - |
-| AARCH64(ARM64)| [GUI](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-aarch64.exe) | [GUI](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-aarch64-apple-darwin.tar.gz) | [GUI](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-aarch64-linux-android.tar.gz) | [APK](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-all-signed.apk) |
+| AARCH64(ARM64)| [GUI](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-aarch64.exe) | [GUI](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-aarch64-apple-darwin) | [GUI](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-aarch64-unknown-linux-musl) | [APK](https://github.com/dure-one/dure-sijang/releases/latest/download/dure-sijang-all-signed.apk) |
 
 [Latest Release](https://github.com/dure-one/dure-sijang/releases)
 

@@ -601,39 +601,56 @@ jobs:
           echo "Formatted results:"
           echo -e "$FORMATTED_RESULTS"
 
-      - name: Prepare Release Artifacts
+      - name: Prepare Binary Release Artifacts
         run: |
-          find artifacts/
-          mkdir distbin/
+          set -euo pipefail
 
-          for i in ./artifacts/*
-          do
-              if [ -d "$i" ]
-              then
-                  # Handle APK separately
-                  [[ "$i" == *"dure-sijang-all-signed.apk"* ]] && cp artifacts/dure-sijang-all-signed.apk/dure-sijang-all-signed.apk distbin/dure-sijang-all-signed.apk && continue
+          find artifacts/ -type f -print
+          mkdir -p distbin
 
-                  # Handle Windows executables - already named by architecture from the build job
-                  if [[ "$i" == *"x86_64-pc-windows-msvc"* ]]; then
-                      cp "$i"/dure-sijang-x86_64.exe distbin/dure-sijang-x86_64.exe 2>/dev/null || true
-                      continue
-                  elif [[ "$i" == *"i686-pc-windows-msvc"* ]]; then
-                      cp "$i"/dure-sijang-i686.exe distbin/dure-sijang-i686.exe 2>/dev/null || true
-                      continue
-                  elif [[ "$i" == *"aarch64-pc-windows-msvc"* ]]; then
-                      cp "$i"/dure-sijang-aarch64.exe distbin/dure-sijang-aarch64.exe 2>/dev/null || true
-                      continue
-                  fi
-
-                  # Handle other platforms - tar compress
-                  cp LICENSE* "$i"
-                  cp README.md "$i"
-                  rm "$i/dure-sijang.d" 1>/dev/null 2>&1 || true
-                  chmod +x "$i/dure-sijang" 1>/dev/null 2>&1 || true
-                  tar -cvpzf "${i}.tar.gz" --directory=${i} .
+          for artifact_dir in ./artifacts/*; do
+              if [ ! -d "$artifact_dir" ]; then
+                  continue
               fi
+
+              PLATFORM=$(basename "$artifact_dir")
+
+              case "$PLATFORM" in
+                  dure-sijang-all-signed.apk)
+                      cp "$artifact_dir/dure-sijang-all-signed.apk" distbin/dure-sijang-all-signed.apk
+                      ;;
+                  dure-sijang-all.aab)
+                      cp "$artifact_dir/dure-sijang-all.aab" distbin/dure-sijang-all.aab
+                      ;;
+                  dure-sijang-x86_64-pc-windows-msvc)
+                      cp "$artifact_dir/dure-sijang-x86_64.exe" distbin/dure-sijang-x86_64.exe
+                      ;;
+                  dure-sijang-i686-pc-windows-msvc)
+                      cp "$artifact_dir/dure-sijang-i686.exe" distbin/dure-sijang-i686.exe
+                      ;;
+                  dure-sijang-aarch64-pc-windows-msvc)
+                      cp "$artifact_dir/dure-sijang-aarch64.exe" distbin/dure-sijang-aarch64.exe
+                      ;;
+                  *)
+                      if [ -f "$artifact_dir/${{ env.BIN_NAME }}" ]; then
+                          chmod +x "$artifact_dir/${{ env.BIN_NAME }}"
+                          cp "$artifact_dir/${{ env.BIN_NAME }}" "distbin/$PLATFORM"
+                      fi
+                      ;;
+              esac
           done
-          cp artifacts/*.tar.gz distbin/ 2>/dev/null || true
+
+          if find distbin -type f \( -name '*.tar.gz' -o -name '*.tgz' \) -print -quit | grep -q .; then
+              echo "::error::Compressed tar archives are not allowed in binary releases"
+              exit 1
+          fi
+
+          if [ -z "$(find distbin -type f -print -quit)" ]; then
+              echo "::error::No binary release artifacts were prepared"
+              exit 1
+          fi
+
+          find distbin -type f -maxdepth 1 -exec ls -lh {} +
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
